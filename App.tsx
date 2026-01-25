@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Category, GameItem } from './types';
 import { useGameStore } from './hooks/useGameStore';
@@ -6,13 +5,18 @@ import { Wheel } from './components/Wheel';
 import { Store } from './components/Store';
 import { cardChallenges, slotActions, slotTargets, slotIntensities } from './data/content';
 
-// Error Boundary para evitar tela preta em caso de erro em subcomponentes
-// Fix: Explicitly using React.Component and React.PropsWithChildren to resolve TS errors regarding state, props, and children
-class ErrorBoundary extends React.Component<React.PropsWithChildren<{}>, {hasError: boolean}> {
-  constructor(props: React.PropsWithChildren<{}>) {
-    super(props);
-    this.state = { hasError: false };
-  }
+// Fix: Explicitly define Props and State interfaces for ErrorBoundary to resolve TS property errors (lines 11, 23, 38)
+interface ErrorBoundaryProps {
+  children?: React.ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  // Fix: Explicitly declare and initialize state as a class field to ensure TypeScript recognizes the 'state' property
+  state: ErrorBoundaryState = { hasError: false };
 
   static getDerivedStateFromError(_: Error) {
     return { hasError: true };
@@ -23,9 +27,10 @@ class ErrorBoundary extends React.Component<React.PropsWithChildren<{}>, {hasErr
   }
 
   render() {
+    // Fix: Access state safely now that it is explicitly typed and declared
     if (this.state.hasError) {
       return (
-        <div className="fixed inset-0 bg-[#070b14] flex flex-col items-center justify-center p-8 text-center">
+        <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 text-center">
           <div className="text-6xl mb-4 text-red-600">⚠️</div>
           <h2 className="text-2xl font-black text-white uppercase mb-4">Ops! Algo deu errado.</h2>
           <p className="text-zinc-500 text-sm mb-8">Ocorreu um erro inesperado. Tente recarregar o aplicativo.</p>
@@ -38,6 +43,7 @@ class ErrorBoundary extends React.Component<React.PropsWithChildren<{}>, {hasErr
         </div>
       );
     }
+    // Fix: Access props safely now that they are explicitly typed in the generic declaration
     return this.props.children;
   }
 }
@@ -78,25 +84,25 @@ const Onboarding: React.FC<{ onComplete: (n: string, p: string) => void }> = ({ 
 
   if (step === 0) {
     return (
-      <div className="fixed inset-0 bg-[#070b14] flex flex-col items-center justify-center p-8 text-center overflow-hidden z-[300]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a2333_0%,_#070b14_100%)] opacity-50"></div>
+      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 text-center overflow-hidden z-[300]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a2333_0%,_#000000_100%)] opacity-50"></div>
         <div className="relative z-10 space-y-12 animate-in fade-in duration-1000 max-w-sm">
-          <div className="w-48 h-48 border-[10px] border-red-600 rounded-full flex flex-col items-center justify-center mx-auto bg-black/60 shadow-[0_0_60px_rgba(220,38,38,0.5)] animate-pulse">
+          <div className="w-48 h-48 border-[10px] border-yellow-600/50 rounded-full flex flex-col items-center justify-center mx-auto bg-black/60 shadow-[0_0_60px_rgba(202,138,4,0.3)] animate-pulse">
             <span className="text-6xl font-black text-white">18+</span>
-            <span className="text-[10px] font-black text-red-500 uppercase tracking-[0.3em] mt-2 text-center">ACESSO<br/>RESTRITO</span>
+            <span className="text-[10px] font-black text-yellow-600 uppercase tracking-[0.3em] mt-2 text-center">ACESSO<br/>RESTRITO</span>
           </div>
           <div className="space-y-4">
             <h1 className="text-6xl font-black text-white italic tracking-tighter uppercase leading-none">LUNA<br/><span className="text-yellow-500">SUTRA</span></h1>
             <p className="text-zinc-400 font-bold uppercase tracking-[0.3em] text-[10px]">O CLIMAX DO SEU RELACIONAMENTO</p>
           </div>
-          <button onClick={() => setStep(1)} className="w-full bg-white text-black py-6 rounded-[2rem] text-xl font-black uppercase tracking-[0.2em] shadow-[0_10px_30px_rgba(255,255,255,0.1)] active:scale-95 transition-all">SOU MAIOR DE IDADE</button>
+          <button onClick={() => setStep(1)} className="w-full bg-yellow-500 text-black py-6 rounded-[2rem] text-xl font-black uppercase tracking-[0.2em] shadow-[0_10px_30px_rgba(255,255,255,0.05)] active:scale-95 transition-all">SOU MAIOR DE IDADE</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 bg-[#070b14] flex flex-col items-center justify-center p-8 animate-in slide-in-from-right duration-500 z-[300]">
+    <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 animate-in slide-in-from-right duration-500 z-[300]">
       <div className="w-full max-w-sm space-y-12">
         <div className="text-center space-y-3">
           <h2 className="text-4xl font-black text-yellow-500 italic uppercase leading-none tracking-tighter">PERFIL VIP</h2>
@@ -105,14 +111,14 @@ const Onboarding: React.FC<{ onComplete: (n: string, p: string) => void }> = ({ 
         <div className="space-y-8">
           <div className="relative">
             <input value={userName} onChange={e => setUserName(e.target.value)} className="w-full bg-[#0f1525] border-4 border-zinc-900 p-6 rounded-[2rem] text-white outline-none focus:border-yellow-500 transition-all text-xl font-black uppercase italic" placeholder="SEU NOME" />
-            <span className="absolute -top-3 left-6 bg-[#070b14] px-2 text-zinc-600 text-[9px] font-black uppercase tracking-widest">JOGADOR 1</span>
+            <span className="absolute -top-3 left-6 bg-black px-2 text-zinc-600 text-[9px] font-black uppercase tracking-widest">JOGADOR 1</span>
           </div>
           <div className="relative">
             <input value={partnerName} onChange={e => setPartnerName(e.target.value)} className="w-full bg-[#0f1525] border-4 border-zinc-900 p-6 rounded-[2rem] text-white outline-none focus:border-yellow-500 transition-all text-xl font-black uppercase italic" placeholder="NOME DO PAR" />
-            <span className="absolute -top-3 left-6 bg-[#070b14] px-2 text-zinc-600 text-[9px] font-black uppercase tracking-widest">JOGADOR 2</span>
+            <span className="absolute -top-3 left-6 bg-black px-2 text-zinc-600 text-[9px] font-black uppercase tracking-widest">JOGADOR 2</span>
           </div>
         </div>
-        <button disabled={!userName || !partnerName} onClick={() => onComplete(userName, partnerName)} className="w-full bg-gradient-to-r from-pink-600 to-purple-600 disabled:opacity-20 py-6 rounded-[2rem] text-xl font-black uppercase text-white shadow-xl transition-all transform active:scale-95">COMEÇAR AGORA 🔒</button>
+        <button disabled={!userName || !partnerName} onClick={() => onComplete(userName, partnerName)} className="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 disabled:opacity-20 py-6 rounded-[2rem] text-xl font-black uppercase text-black shadow-xl transition-all transform active:scale-95">COMEÇAR AGORA 🔒</button>
       </div>
     </div>
   );
@@ -140,7 +146,7 @@ const CardsGame = ({ onComplete }: { onComplete: (item: any) => void }) => {
             {flipped.includes(i) ? (
               <span className="text-3xl">🔥</span>
             ) : (
-              <span className="text-pink-500 text-4xl drop-shadow-[0_0_10px_rgba(233,30,99,0.4)]">❤️</span>
+              <span className="text-yellow-500 text-4xl drop-shadow-[0_0_10px_rgba(255,193,7,0.2)]">❤️</span>
             )}
           </div>
         ))}
@@ -184,12 +190,12 @@ const SlotGame = ({ onComplete }: { onComplete: (item: any) => void }) => {
       <h2 className="text-6xl font-black text-white italic uppercase tracking-tighter leading-none">SLOT<br/>PROIBIDO</h2>
       <div className="bg-[#0f1525] p-6 rounded-[3rem] border-8 border-zinc-950 flex space-x-3 max-w-sm mx-auto shadow-2xl relative">
          {cols.map((val, i) => (
-           <div key={i} className={`flex-1 aspect-[1/2] bg-zinc-950 rounded-2xl border-2 border-zinc-900 flex items-center justify-center p-2 text-center text-xs font-black text-pink-500 italic shadow-inner transition-all ${spinning ? 'opacity-40' : ''}`}>
+           <div key={i} className={`flex-1 aspect-[1/2] bg-zinc-950 rounded-2xl border-2 border-zinc-900 flex items-center justify-center p-2 text-center text-xs font-black text-yellow-500 italic shadow-inner transition-all ${spinning ? 'opacity-40' : ''}`}>
              <span className="uppercase tracking-tighter leading-tight break-words">{val}</span>
            </div>
          ))}
       </div>
-      <button onClick={spin} disabled={spinning} className="px-12 py-6 bg-gradient-to-r from-pink-600 to-purple-600 rounded-[2rem] font-black text-2xl uppercase tracking-widest text-white shadow-xl active:translate-y-2 active:shadow-none transition-all disabled:opacity-50">
+      <button onClick={spin} disabled={spinning} className="px-12 py-6 bg-gradient-to-r from-yellow-600 to-yellow-500 rounded-[2rem] font-black text-2xl uppercase tracking-widest text-black shadow-xl active:translate-y-2 active:shadow-none transition-all disabled:opacity-50">
         {spinning ? 'SORTEANDO...' : '⚡ PUXAR'}
       </button>
     </div>
@@ -231,20 +237,20 @@ const SurpriseDice: React.FC<{ onWin: (desire: string) => void }> = ({ onWin }) 
 
       {phase === 'setup' && (
         <div className="space-y-6 animate-in slide-in-from-top">
-          <textarea value={desire} onChange={e => setDesire(e.target.value)} placeholder="O que deseja que seu par faça?" className="w-full bg-black/50 border-2 border-zinc-900 p-4 rounded-2xl text-white h-32 outline-none focus:border-pink-500 transition-all font-black text-base italic" />
+          <textarea value={desire} onChange={e => setDesire(e.target.value)} placeholder="O que deseja que seu par faça?" className="w-full bg-black/50 border-2 border-zinc-900 p-4 rounded-2xl text-white h-32 outline-none focus:border-yellow-500 transition-all font-black text-base italic" />
           <div className="flex items-center justify-between bg-black/40 p-4 rounded-2xl">
             <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">NÚMERO DA SORTE</span>
             <select value={secretNum} onChange={e => setSecretNum(Number(e.target.value))} className="bg-zinc-900 text-yellow-500 px-4 py-2 rounded-xl font-black text-xl border-2 border-yellow-500/20">
               {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </div>
-          <button onClick={() => desire && setPhase('hidden')} className="w-full bg-pink-600 py-5 rounded-2xl font-black text-white uppercase tracking-widest text-lg shadow-lg">ESCONDER DESEJO 🤫</button>
+          <button onClick={() => desire && setPhase('hidden')} className="w-full bg-yellow-600 py-5 rounded-2xl font-black text-white uppercase tracking-widest text-lg shadow-lg">ESCONDER DESEJO 🤫</button>
         </div>
       )}
 
       {phase === 'hidden' && (
         <div className="space-y-8 animate-in zoom-in">
-          <div className="p-6 bg-zinc-950 rounded-2xl border-2 border-pink-500/10">
+          <div className="p-6 bg-zinc-950 rounded-2xl border-2 border-yellow-500/10">
             <p className="text-white text-lg font-black leading-tight italic">Parceiro, adivinhe o número secreto!</p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-2">
@@ -335,9 +341,8 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <div className="h-full flex flex-col bg-[#070b14] text-white">
+      <div className="h-full flex flex-col bg-black text-white">
         
-        {/* Sequential Tutorial Logic */}
         {activeTab === 'girar' && !state.tutorialsCompleted.includes('girar') && (
           <TutorialOverlay {...tutorialContent.girar} onClose={() => completeTutorial('girar')} />
         )}
@@ -345,7 +350,6 @@ export default function App() {
           <TutorialOverlay {...tutorialContent.dado} onClose={() => completeTutorial('dado')} />
         )}
 
-        {/* Other Tab Tutorials */}
         {activeTab === 'cards' && !state.tutorialsCompleted.includes('cards') && (
           <TutorialOverlay {...tutorialContent.cards} onClose={() => completeTutorial('cards')} />
         )}
@@ -357,7 +361,7 @@ export default function App() {
           <div className="flex justify-between items-start">
             <div className="space-y-1">
                <h1 className="text-[10px] font-black tracking-[0.4em] text-yellow-500 uppercase opacity-60">LUNA CLUB</h1>
-               <p className="text-2xl font-black italic tracking-tighter uppercase leading-none">{state.userName} <span className="text-pink-500">&</span> {state.partnerName}</p>
+               <p className="text-2xl font-black italic tracking-tighter uppercase leading-none">{state.userName} <span className="text-yellow-500">&</span> {state.partnerName}</p>
             </div>
             <div className="bg-[#0f1525] px-4 py-2 rounded-2xl border-2 border-zinc-950 flex items-center space-x-2 shadow-lg">
               <span className="text-xl font-black text-yellow-500">{state.coins}</span>
@@ -398,13 +402,12 @@ export default function App() {
           {activeTab === 'loja' && <Store state={state} onUnlock={unlockGame} />}
         </main>
 
-        {/* Mission Modal */}
         {activeMission && (
           <div className="fixed inset-0 z-[250] bg-black/98 backdrop-blur-3xl flex items-center justify-center p-6 animate-in fade-in duration-300">
-             <div className="bg-[#0f1525] border-6 border-pink-500/20 w-full max-w-[340px] rounded-[3rem] overflow-hidden shadow-2xl text-center p-10 space-y-8">
+             <div className="bg-[#0f1525] border-6 border-yellow-500/20 w-full max-w-[340px] rounded-[3rem] overflow-hidden shadow-2xl text-center p-10 space-y-8">
                 <div className="space-y-2">
                    <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter leading-tight">{activeMission.nome}</h2>
-                   <span className="inline-block bg-pink-500/10 text-pink-500 text-[9px] font-black px-6 py-2 rounded-full uppercase tracking-[0.3em] border border-pink-500/20">{activeMission.categoria}</span>
+                   <span className="inline-block bg-yellow-500/10 text-yellow-500 text-[9px] font-black px-6 py-2 rounded-full uppercase tracking-[0.3em] border border-yellow-500/20">{activeMission.categoria}</span>
                 </div>
                 <div className="p-6 bg-black/80 rounded-[2rem] border-2 border-zinc-900">
                   <p className="text-2xl text-white font-black leading-tight italic">"{activeMission.descricao}"</p>
@@ -412,12 +415,12 @@ export default function App() {
 
                 {missionTimer !== null && (
                   <div className="space-y-4">
-                     <div className="text-6xl font-black text-pink-500 font-mono">
+                     <div className="text-6xl font-black text-yellow-500 font-mono">
                        00:{missionTimer < 10 ? `0${missionTimer}` : missionTimer}
                      </div>
                      <div className="w-full bg-zinc-900 h-2 rounded-full overflow-hidden border border-zinc-800">
                        <div 
-                         className="bg-gradient-to-r from-pink-600 to-purple-600 h-full transition-all duration-1000 ease-linear"
+                         className="bg-gradient-to-r from-yellow-600 to-yellow-400 h-full transition-all duration-1000 ease-linear"
                          style={{ width: `${(missionTimer / 30) * 100}%` }}
                        ></div>
                      </div>
@@ -437,7 +440,7 @@ export default function App() {
                     disabled={missionTimer !== null && missionTimer > 0}
                     className={`w-full py-6 font-black rounded-2xl uppercase tracking-widest text-xl transition-all shadow-lg ${
                       (missionTimer === null && activeMission.reward > 0) 
-                        ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-[0_8px_0_rgb(157,23,77)]' 
+                        ? 'bg-gradient-to-r from-yellow-600 to-yellow-500 text-black shadow-[0_8px_0_rgb(161,98,7)]' 
                         : (missionTimer === 0 || activeMission.reward === 0) 
                           ? 'bg-yellow-500 text-black shadow-[0_8px_0_rgb(161,98,7)]' 
                           : 'bg-zinc-800 text-zinc-500 opacity-50'
@@ -457,7 +460,7 @@ export default function App() {
           </div>
         )}
 
-        <nav className="fixed bottom-0 left-0 right-0 bg-[#0f1525]/95 backdrop-blur-xl border-t-4 border-zinc-950 px-6 py-6 flex justify-around items-center z-50 rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.8)] pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+        <nav className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-xl border-t-4 border-zinc-950 px-6 py-6 flex justify-around items-center z-50 rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.8)] pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
           {[
             { id: 'girar', label: 'LUNA', icon: '🎰' },
             { id: 'cards', label: 'CARDS', icon: '🎴' },
