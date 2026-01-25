@@ -2,20 +2,21 @@ import { GoogleGenAI } from "@google/genai";
 
 /**
  * Inicializa o cliente da Gemini API de forma segura.
- * Utiliza process.env.API_KEY conforme diretrizes de segurança.
+ * Utiliza process.env.API_KEY conforme diretrizes obrigatórias.
  */
 export const getAIClient = () => {
+  // O SDK injeta automaticamente a chave se disponível no ambiente
   const apiKey = process.env.API_KEY;
 
   if (!apiKey) {
-    console.warn("Gemini API Key não encontrada. Verifique as variáveis de ambiente.");
+    console.warn("Luna: API Key não detectada. Funcionalidades de IA estarão limitadas.");
     return null;
   }
 
   try {
     return new GoogleGenAI({ apiKey });
   } catch (error) {
-    console.error("Erro ao inicializar GoogleGenAI:", error);
+    console.error("Luna: Erro crítico ao inicializar o motor de IA:", error);
     return null;
   }
 };
