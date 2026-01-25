@@ -1,9 +1,46 @@
+
 import React, { useState, useEffect } from 'react';
 import { Category, GameItem } from './types';
 import { useGameStore } from './hooks/useGameStore';
 import { Wheel } from './components/Wheel';
 import { Store } from './components/Store';
 import { cardChallenges, slotActions, slotTargets, slotIntensities } from './data/content';
+
+// Error Boundary para evitar tela preta em caso de erro em subcomponentes
+// Fix: Explicitly using React.Component and React.PropsWithChildren to resolve TS errors regarding state, props, and children
+class ErrorBoundary extends React.Component<React.PropsWithChildren<{}>, {hasError: boolean}> {
+  constructor(props: React.PropsWithChildren<{}>) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(_: Error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("Luna Crash Log:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="fixed inset-0 bg-[#070b14] flex flex-col items-center justify-center p-8 text-center">
+          <div className="text-6xl mb-4 text-red-600">⚠️</div>
+          <h2 className="text-2xl font-black text-white uppercase mb-4">Ops! Algo deu errado.</h2>
+          <p className="text-zinc-500 text-sm mb-8">Ocorreu um erro inesperado. Tente recarregar o aplicativo.</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-white text-black px-8 py-4 rounded-2xl font-black uppercase tracking-widest"
+          >
+            RECARREGAR LUNA
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const TutorialOverlay: React.FC<{ 
   title: string; 
@@ -159,6 +196,90 @@ const SlotGame = ({ onComplete }: { onComplete: (item: any) => void }) => {
   );
 };
 
+const SurpriseDice: React.FC<{ onWin: (desire: string) => void }> = ({ onWin }) => {
+  const [desire, setDesire] = useState('');
+  const [secretNum, setSecretNum] = useState(1);
+  const [guessNum, setGuessNum] = useState(1);
+  const [isRolling, setIsRolling] = useState(false);
+  const [rolled, setRolled] = useState<number | null>(null);
+  const [phase, setPhase] = useState<'setup' | 'hidden' | 'result'>('setup');
+
+  const rollDice = () => {
+    setIsRolling(true);
+    setTimeout(() => {
+      const res = Math.floor(Math.random() * 6) + 1;
+      setRolled(res);
+      setIsRolling(false);
+      setPhase('result');
+      if (guessNum === secretNum) {
+        onWin(desire);
+      }
+    }, 2000);
+  };
+
+  const DiceFace = ({ n, rolling }: { n: number | null, rolling: boolean }) => (
+    <div className={`relative w-24 h-24 mx-auto perspective-1000 ${rolling ? 'animate-spin' : ''}`}>
+      <div className="w-full h-full bg-gradient-to-br from-white to-zinc-200 rounded-2xl flex items-center justify-center text-5xl text-zinc-900 font-black shadow-xl border-4 border-zinc-300">
+        {rolling ? '🎲' : n || '🎲'}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="w-full max-w-sm bg-[#0f1525] p-8 rounded-[2.5rem] border-4 border-zinc-950 shadow-2xl space-y-8 text-center my-10 mx-auto">
+      <h3 className="text-2xl font-black text-yellow-500 uppercase italic tracking-tighter">DADO DA SURPRESA 3D</h3>
+
+      {phase === 'setup' && (
+        <div className="space-y-6 animate-in slide-in-from-top">
+          <textarea value={desire} onChange={e => setDesire(e.target.value)} placeholder="O que deseja que seu par faça?" className="w-full bg-black/50 border-2 border-zinc-900 p-4 rounded-2xl text-white h-32 outline-none focus:border-pink-500 transition-all font-black text-base italic" />
+          <div className="flex items-center justify-between bg-black/40 p-4 rounded-2xl">
+            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">NÚMERO DA SORTE</span>
+            <select value={secretNum} onChange={e => setSecretNum(Number(e.target.value))} className="bg-zinc-900 text-yellow-500 px-4 py-2 rounded-xl font-black text-xl border-2 border-yellow-500/20">
+              {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </div>
+          <button onClick={() => desire && setPhase('hidden')} className="w-full bg-pink-600 py-5 rounded-2xl font-black text-white uppercase tracking-widest text-lg shadow-lg">ESCONDER DESEJO 🤫</button>
+        </div>
+      )}
+
+      {phase === 'hidden' && (
+        <div className="space-y-8 animate-in zoom-in">
+          <div className="p-6 bg-zinc-950 rounded-2xl border-2 border-pink-500/10">
+            <p className="text-white text-lg font-black leading-tight italic">Parceiro, adivinhe o número secreto!</p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+             {[1, 2, 3, 4, 5, 6].map(n => (
+               <button key={n} onClick={() => setGuessNum(n)} className={`w-12 h-12 rounded-xl font-black text-lg transition-all ${guessNum === n ? 'bg-yellow-500 text-black scale-110 shadow-lg' : 'bg-zinc-800 text-zinc-600'}`}>{n}</button>
+             ))}
+          </div>
+          <DiceFace n={null} rolling={isRolling} />
+          <button onClick={rollDice} disabled={isRolling} className="w-full bg-yellow-500 py-5 rounded-2xl font-black text-black uppercase tracking-widest text-xl shadow-xl active:translate-y-1 transition-all">LANÇAR DADO 🎲</button>
+        </div>
+      )}
+
+      {phase === 'result' && (
+        <div className="space-y-6 animate-in bounce-in">
+          <DiceFace n={rolled} rolling={false} />
+          {guessNum === secretNum ? (
+            <div className="space-y-4">
+              <h4 className="text-2xl font-black text-green-500 uppercase tracking-tighter">ACERTOU! 🎁</h4>
+              <div className="p-6 bg-black/80 rounded-2xl border-2 border-green-500/40">
+                <p className="text-white text-xl font-black italic">"{desire}"</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <h4 className="text-2xl font-black text-red-600 uppercase tracking-tighter">ERROU! 💥</h4>
+              <p className="text-zinc-400 text-sm font-bold italic">O número secreto era {secretNum}. O desejo continua oculto...</p>
+            </div>
+          )}
+          <button onClick={() => setPhase('setup')} className="w-full bg-zinc-900 py-4 rounded-xl font-black text-zinc-600 uppercase tracking-widest text-xs">NOVA RODADA</button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function App() {
   const { state, updateProfile, addCompletion, unlockGame, completeTutorial } = useGameStore();
   const [activeTab, setActiveTab] = useState<'girar' | 'cards' | 'slot' | 'loja' | 'vip'>('girar');
@@ -178,13 +299,18 @@ export default function App() {
     return () => clearInterval(interval);
   }, [missionTimer]);
 
-  if (!state.isOnboarded) return <Onboarding onComplete={updateProfile} />;
+  if (!state.isOnboarded) return <ErrorBoundary><Onboarding onComplete={updateProfile} /></ErrorBoundary>;
 
   const tutorialContent = {
     girar: { 
       title: "ROLETA LUNA", 
       icon: "🎰", 
       description: "1. Escolha a intensidade: Aquecimento, Ousadia ou Posição.\n2. Clique em GIRAR para sortear um desafio.\n3. Após o sorteio, clique em INICIAR AGORA.\n4. Realize a missão por 35 segundos.\n5. Somente após o tempo zerar, você poderá clicar em CONCLUÍDO e ganhar 20 moedas!" 
+    },
+    dado: { 
+      title: "DADO DA SURPRESA", 
+      icon: "🎲", 
+      description: "1. Um parceiro escreve um desejo oculto e um número de 1 a 6.\n2. O outro parceiro tenta adivinhar o número secreto.\n3. Se você acertar o número secreto do seu par, o desejo é revelado para ser cumprido na hora!" 
     },
     cards: { 
       title: "CARDS DA SORTE", 
@@ -208,134 +334,144 @@ export default function App() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#070b14] text-white">
-      
-      {activeTab === 'girar' && !state.tutorialsCompleted.includes('girar') && (
-        <TutorialOverlay {...tutorialContent.girar} onClose={() => completeTutorial('girar')} />
-      )}
-
-      {activeTab === 'cards' && !state.tutorialsCompleted.includes('cards') && (
-        <TutorialOverlay {...tutorialContent.cards} onClose={() => completeTutorial('cards')} />
-      )}
-      {activeTab === 'slot' && !state.tutorialsCompleted.includes('slot') && (
-        <TutorialOverlay {...tutorialContent.slot} onClose={() => completeTutorial('slot')} />
-      )}
-
-      <header className="px-8 pt-10 pb-4 space-y-6">
-        <div className="flex justify-between items-start">
-          <div className="space-y-1">
-             <h1 className="text-[10px] font-black tracking-[0.4em] text-yellow-500 uppercase opacity-60">LUNA CLUB</h1>
-             <p className="text-2xl font-black italic tracking-tighter uppercase leading-none">{state.userName} <span className="text-pink-500">&</span> {state.partnerName}</p>
-          </div>
-          <div className="bg-[#0f1525] px-4 py-2 rounded-2xl border-2 border-zinc-950 flex items-center space-x-2 shadow-lg">
-            <span className="text-xl font-black text-yellow-500">{state.coins}</span>
-            <span className="text-base animate-pulse">🪙</span>
-          </div>
-        </div>
+    <ErrorBoundary>
+      <div className="h-full flex flex-col bg-[#070b14] text-white">
         
-        <div className="bg-[#0f1525]/80 p-6 rounded-[2rem] border-2 border-zinc-950 space-y-3 shadow-lg">
-          <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500 tracking-[0.2em]">
-            <span>CONEXÃO</span>
-            <span className="text-yellow-500">{state.completedPositions} / 5</span>
-          </div>
-          <div className="w-full bg-zinc-950 h-3 rounded-full overflow-hidden border-2 border-zinc-900 p-0.5">
-            <div className="bg-gradient-to-r from-yellow-600 to-yellow-400 h-full rounded-full transition-all duration-1000" style={{ width: `${Math.min(100, (state.completedPositions / 5) * 100)}%` }}></div>
-          </div>
-        </div>
-      </header>
+        {/* Sequential Tutorial Logic */}
+        {activeTab === 'girar' && !state.tutorialsCompleted.includes('girar') && (
+          <TutorialOverlay {...tutorialContent.girar} onClose={() => completeTutorial('girar')} />
+        )}
+        {activeTab === 'girar' && state.tutorialsCompleted.includes('girar') && !state.tutorialsCompleted.includes('dado') && (
+          <TutorialOverlay {...tutorialContent.dado} onClose={() => completeTutorial('dado')} />
+        )}
 
-      <main className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar pb-32">
-        {activeTab === 'girar' && (
-          <div className="px-4 py-6 space-y-10 flex flex-col items-center">
-             <div className="w-full max-w-sm flex bg-[#0f1525] p-2 rounded-[2rem] border-2 border-zinc-950 shadow-xl">
-              {Object.values(Category).map(cat => (
-                <button key={cat} onClick={() => setCategory(cat)} className={`flex-1 py-3 rounded-2xl text-[9px] font-black uppercase tracking-[0.1em] transition-all ${category === cat ? 'bg-yellow-500 text-black shadow-md' : 'text-zinc-600'}`}>{cat}</button>
-              ))}
+        {/* Other Tab Tutorials */}
+        {activeTab === 'cards' && !state.tutorialsCompleted.includes('cards') && (
+          <TutorialOverlay {...tutorialContent.cards} onClose={() => completeTutorial('cards')} />
+        )}
+        {activeTab === 'slot' && !state.tutorialsCompleted.includes('slot') && (
+          <TutorialOverlay {...tutorialContent.slot} onClose={() => completeTutorial('slot')} />
+        )}
+
+        <header className="px-8 pt-10 pb-4 space-y-6">
+          <div className="flex justify-between items-start">
+            <div className="space-y-1">
+               <h1 className="text-[10px] font-black tracking-[0.4em] text-yellow-500 uppercase opacity-60">LUNA CLUB</h1>
+               <p className="text-2xl font-black italic tracking-tighter uppercase leading-none">{state.userName} <span className="text-pink-500">&</span> {state.partnerName}</p>
             </div>
-            
-            <div className="w-full max-w-sm flex justify-center">
-              <Wheel category={category} history={state.history} onComplete={(item) => addCompletion(item.id)} />
+            <div className="bg-[#0f1525] px-4 py-2 rounded-2xl border-2 border-zinc-950 flex items-center space-x-2 shadow-lg">
+              <span className="text-xl font-black text-yellow-500">{state.coins}</span>
+              <span className="text-base animate-pulse">🪙</span>
             </div>
+          </div>
+          
+          <div className="bg-[#0f1525]/80 p-6 rounded-[2rem] border-2 border-zinc-950 space-y-3 shadow-lg">
+            <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500 tracking-[0.2em]">
+              <span>CONEXÃO</span>
+              <span className="text-yellow-500">{state.completedPositions} / 5</span>
+            </div>
+            <div className="w-full bg-zinc-950 h-3 rounded-full overflow-hidden border-2 border-zinc-900 p-0.5">
+              <div className="bg-gradient-to-r from-yellow-600 to-yellow-400 h-full rounded-full transition-all duration-1000" style={{ width: `${Math.min(100, (state.completedPositions / 5) * 100)}%` }}></div>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar pb-32">
+          {activeTab === 'girar' && (
+            <div className="px-4 py-6 space-y-10 flex flex-col items-center">
+               <div className="w-full max-w-sm flex bg-[#0f1525] p-2 rounded-[2rem] border-2 border-zinc-950 shadow-xl">
+                {Object.values(Category).map(cat => (
+                  <button key={cat} onClick={() => setCategory(cat)} className={`flex-1 py-3 rounded-2xl text-[9px] font-black uppercase tracking-[0.1em] transition-all ${category === cat ? 'bg-yellow-500 text-black shadow-md' : 'text-zinc-600'}`}>{cat}</button>
+                ))}
+              </div>
+              
+              <div className="w-full max-w-sm flex justify-center">
+                <Wheel category={category} history={state.history} onComplete={(item) => addCompletion(item.id)} />
+              </div>
+
+              <SurpriseDice onWin={(desire) => setActiveMission({ nome: "DESEJO CONCEDIDO!", descricao: desire, categoria: "Surpresa", id: "surprise-win-" + Date.now(), reward: 0 })} />
+            </div>
+          )}
+
+          {activeTab === 'cards' && <CardsGame onComplete={(item) => setActiveMission({...item, reward: 10})} />}
+          {activeTab === 'slot' && <SlotGame onComplete={(item) => setActiveMission({...item, reward: 10})} />}
+          {activeTab === 'loja' && <Store state={state} onUnlock={unlockGame} />}
+        </main>
+
+        {/* Mission Modal */}
+        {activeMission && (
+          <div className="fixed inset-0 z-[250] bg-black/98 backdrop-blur-3xl flex items-center justify-center p-6 animate-in fade-in duration-300">
+             <div className="bg-[#0f1525] border-6 border-pink-500/20 w-full max-w-[340px] rounded-[3rem] overflow-hidden shadow-2xl text-center p-10 space-y-8">
+                <div className="space-y-2">
+                   <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter leading-tight">{activeMission.nome}</h2>
+                   <span className="inline-block bg-pink-500/10 text-pink-500 text-[9px] font-black px-6 py-2 rounded-full uppercase tracking-[0.3em] border border-pink-500/20">{activeMission.categoria}</span>
+                </div>
+                <div className="p-6 bg-black/80 rounded-[2rem] border-2 border-zinc-900">
+                  <p className="text-2xl text-white font-black leading-tight italic">"{activeMission.descricao}"</p>
+                </div>
+
+                {missionTimer !== null && (
+                  <div className="space-y-4">
+                     <div className="text-6xl font-black text-pink-500 font-mono">
+                       00:{missionTimer < 10 ? `0${missionTimer}` : missionTimer}
+                     </div>
+                     <div className="w-full bg-zinc-900 h-2 rounded-full overflow-hidden border border-zinc-800">
+                       <div 
+                         className="bg-gradient-to-r from-pink-600 to-purple-600 h-full transition-all duration-1000 ease-linear"
+                         style={{ width: `${(missionTimer / 30) * 100}%` }}
+                       ></div>
+                     </div>
+                  </div>
+                )}
+
+                <div className="flex flex-col space-y-4">
+                  <button 
+                    onClick={() => {
+                      if (missionTimer === null && activeMission.reward > 0) {
+                        handleStartMissionTimer();
+                      } else {
+                        addCompletion(activeMission.id, activeMission.reward); 
+                        closeMission();
+                      }
+                    }} 
+                    disabled={missionTimer !== null && missionTimer > 0}
+                    className={`w-full py-6 font-black rounded-2xl uppercase tracking-widest text-xl transition-all shadow-lg ${
+                      (missionTimer === null && activeMission.reward > 0) 
+                        ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-[0_8px_0_rgb(157,23,77)]' 
+                        : (missionTimer === 0 || activeMission.reward === 0) 
+                          ? 'bg-yellow-500 text-black shadow-[0_8px_0_rgb(161,98,7)]' 
+                          : 'bg-zinc-800 text-zinc-500 opacity-50'
+                    }`}
+                  >
+                    {missionTimer === null && activeMission.reward > 0 ? 'COMEÇAR AGORA ⏳' : (missionTimer === 0 || activeMission.reward === 0) ? `CONCLUÍDO! (+${activeMission.reward})` : 'AGUARDE...'}
+                  </button>
+                  <button 
+                    onClick={closeMission} 
+                    disabled={missionTimer !== null && missionTimer > 0}
+                    className={`text-zinc-600 font-black uppercase text-[9px] tracking-[0.3em] ${missionTimer !== null && missionTimer > 0 ? 'opacity-20 pointer-events-none' : ''}`}
+                  >
+                    ✕ FECHAR
+                  </button>
+                </div>
+             </div>
           </div>
         )}
 
-        {activeTab === 'cards' && <CardsGame onComplete={(item) => setActiveMission({...item, reward: 10})} />}
-        {activeTab === 'slot' && <SlotGame onComplete={(item) => setActiveMission({...item, reward: 10})} />}
-        {activeTab === 'loja' && <Store state={state} onUnlock={unlockGame} />}
-      </main>
-
-      {activeMission && (
-        <div className="fixed inset-0 z-[250] bg-black/98 backdrop-blur-3xl flex items-center justify-center p-6 animate-in fade-in duration-300">
-           <div className="bg-[#0f1525] border-6 border-pink-500/20 w-full max-w-[340px] rounded-[3rem] overflow-hidden shadow-2xl text-center p-10 space-y-8">
-              <div className="space-y-2">
-                 <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter leading-tight">{activeMission.nome}</h2>
-                 <span className="inline-block bg-pink-500/10 text-pink-500 text-[9px] font-black px-6 py-2 rounded-full uppercase tracking-[0.3em] border border-pink-500/20">{activeMission.categoria}</span>
-              </div>
-              <div className="p-6 bg-black/80 rounded-[2rem] border-2 border-zinc-900">
-                <p className="text-2xl text-white font-black leading-tight italic">"{activeMission.descricao}"</p>
-              </div>
-
-              {missionTimer !== null && (
-                <div className="space-y-4">
-                   <div className="text-6xl font-black text-pink-500 font-mono">
-                     00:{missionTimer < 10 ? `0${missionTimer}` : missionTimer}
-                   </div>
-                   <div className="w-full bg-zinc-900 h-2 rounded-full overflow-hidden border border-zinc-800">
-                     <div 
-                       className="bg-gradient-to-r from-pink-600 to-purple-600 h-full transition-all duration-1000 ease-linear"
-                       style={{ width: `${(missionTimer / 30) * 100}%` }}
-                     ></div>
-                   </div>
-                </div>
-              )}
-
-              <div className="flex flex-col space-y-4">
-                <button 
-                  onClick={() => {
-                    if (missionTimer === null && activeMission.reward > 0) {
-                      handleStartMissionTimer();
-                    } else {
-                      addCompletion(activeMission.id, activeMission.reward); 
-                      closeMission();
-                    }
-                  }} 
-                  disabled={missionTimer !== null && missionTimer > 0}
-                  className={`w-full py-6 font-black rounded-2xl uppercase tracking-widest text-xl transition-all shadow-lg ${
-                    (missionTimer === null && activeMission.reward > 0) 
-                      ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-[0_8px_0_rgb(157,23,77)]' 
-                      : (missionTimer === 0 || activeMission.reward === 0) 
-                        ? 'bg-yellow-500 text-black shadow-[0_8px_0_rgb(161,98,7)]' 
-                        : 'bg-zinc-800 text-zinc-500 opacity-50'
-                  }`}
-                >
-                  {missionTimer === null && activeMission.reward > 0 ? 'COMEÇAR AGORA ⏳' : (missionTimer === 0 || activeMission.reward === 0) ? `CONCLUÍDO! (+${activeMission.reward})` : 'AGUARDE...'}
-                </button>
-                <button 
-                  onClick={closeMission} 
-                  disabled={missionTimer !== null && missionTimer > 0}
-                  className={`text-zinc-600 font-black uppercase text-[9px] tracking-[0.3em] ${missionTimer !== null && missionTimer > 0 ? 'opacity-20 pointer-events-none' : ''}`}
-                >
-                  ✕ FECHAR
-                </button>
-              </div>
-           </div>
-        </div>
-      )}
-
-      <nav className="fixed bottom-0 left-0 right-0 bg-[#0f1525]/95 backdrop-blur-xl border-t-4 border-zinc-950 px-6 py-6 flex justify-around items-center z-50 rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.8)] pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-        {[
-          { id: 'girar', label: 'LUNA', icon: '🎰' },
-          { id: 'cards', label: 'CARDS', icon: '🎴' },
-          { id: 'slot', label: 'SLOT', icon: '⚡' },
-          { id: 'loja', label: 'LOJA', icon: '👜' },
-          { id: 'vip', label: 'VIP', icon: '🏆' }
-        ].map(item => (
-          <button key={item.id} onClick={() => setActiveTab(item.id as any)} className="flex flex-col items-center space-y-2 relative">
-            <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl transition-all ${activeTab === item.id ? 'bg-yellow-500 text-black shadow-lg -translate-y-3' : 'text-zinc-600'}`}>{item.icon}</div>
-            <span className={`text-[8px] font-black tracking-widest transition-all ${activeTab === item.id ? 'text-yellow-500 opacity-100' : 'opacity-30'}`}>{item.label}</span>
-          </button>
-        ))}
-      </nav>
-    </div>
+        <nav className="fixed bottom-0 left-0 right-0 bg-[#0f1525]/95 backdrop-blur-xl border-t-4 border-zinc-950 px-6 py-6 flex justify-around items-center z-50 rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.8)] pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+          {[
+            { id: 'girar', label: 'LUNA', icon: '🎰' },
+            { id: 'cards', label: 'CARDS', icon: '🎴' },
+            { id: 'slot', label: 'SLOT', icon: '⚡' },
+            { id: 'loja', label: 'LOJA', icon: '👜' },
+            { id: 'vip', label: 'VIP', icon: '🏆' }
+          ].map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id as any)} className="flex flex-col items-center space-y-2 relative">
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl transition-all ${activeTab === item.id ? 'bg-yellow-500 text-black shadow-lg -translate-y-3' : 'text-zinc-600'}`}>{item.icon}</div>
+              <span className={`text-[8px] font-black tracking-widest transition-all ${activeTab === item.id ? 'text-yellow-500 opacity-100' : 'opacity-30'}`}>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+      </div>
+    </ErrorBoundary>
   );
 }
