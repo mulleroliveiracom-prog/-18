@@ -11,91 +11,93 @@ export const Store: React.FC<StoreProps> = ({ state, onUnlock }) => {
   const shopItems = [
     {
       id: 'oracle',
-      name: 'Oráculo do Desejo',
-      description: 'Descubra os desejos mais profundos do seu par neste jogo de cartas psicológico.',
-      cost: 50,
-      unlockRequirement: '20 Posições Concluídas',
-      requiredCount: 20
+      name: 'ORÁCULO DO DESEJO',
+      description: 'Um mergulho nas fantasias subconscientes do seu par. Use cartas intuitivas para revelar o que as palavras não dizem.',
+      cost: 500,
+      levelRequired: 20,
+      icon: '✨'
     },
     {
       id: 'crystal_dice',
-      name: 'Dados de Cristal',
-      description: 'Versão avançada dos dados com desafios extremos e personalizáveis.',
-      cost: 200,
-      unlockRequirement: '50 Posições Concluídas',
-      requiredCount: 50
+      name: 'DADOS DE CRISTAL',
+      description: 'Mecânica avançada de sorteio com desafios de alta intensidade e novos locais.',
+      cost: 750,
+      levelRequired: 35,
+      icon: '💎'
     },
     {
-      id: 'vip_suite',
-      name: 'Suíte VIP',
-      description: 'Acesso a conteúdos exclusivos e trilhas sonoras imersivas para suas sessões.',
-      cost: 500,
-      unlockRequirement: '100 Posições Concluídas',
-      requiredCount: 100
+      id: 'forbidden_slot',
+      name: 'SLOT PROIBIDO',
+      description: 'Combinações aleatórias rápidas e ousadas para momentos de extrema urgência.',
+      cost: 1000,
+      levelRequired: 50,
+      icon: '⚡'
     }
   ];
 
   return (
-    <div className="p-6 pb-24 space-y-8">
-      <div className="flex justify-between items-center bg-zinc-900/80 p-6 rounded-3xl border border-yellow-600/30">
-        <div>
-          <h2 className="text-zinc-400 text-sm font-bold uppercase tracking-widest">Saldo VIP</h2>
-          <div className="flex items-center space-x-2">
-            <span className="text-3xl font-bold text-yellow-500">{state.coins}</span>
-            <span className="text-yellow-600">🪙</span>
-          </div>
-        </div>
-        <div className="text-right">
-          <h2 className="text-zinc-400 text-sm font-bold uppercase tracking-widest">Nível</h2>
-          <p className="text-xl font-semibold text-white">
-            {state.completedPositions >= 100 ? 'Mestre do Prazer' : 'Iniciante VIP'}
-          </p>
+    <div className="p-6 pb-32 space-y-10 animate-in fade-in duration-500">
+      <div className="relative bg-gradient-to-br from-[#ffc107] to-[#ff9800] p-12 rounded-[3.5rem] shadow-2xl overflow-hidden group">
+        <div className="absolute -right-16 -top-16 w-56 h-56 bg-white/20 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-700"></div>
+        <div className="relative z-10 flex flex-col space-y-2">
+            <h2 className="text-black/50 text-[10px] font-black uppercase tracking-[0.4em]">SALDO VIP TOTAL</h2>
+            <div className="flex items-center space-x-4">
+               <span className="text-7xl font-black text-black leading-none">{state.coins}</span>
+               <span className="text-4xl filter drop-shadow-[0_4px_10px_rgba(0,0,0,0.3)]">🪙</span>
+            </div>
         </div>
       </div>
 
-      <h3 className="font-luxury text-3xl text-center text-white mb-6">Loja Secreta</h3>
-
-      <div className="space-y-4">
+      <div className="space-y-8">
         {shopItems.map(item => {
           const isUnlocked = state.unlockedGames.includes(item.id);
-          const canUnlock = state.completedPositions >= item.requiredCount && state.coins >= item.cost;
+          const isLevelMet = state.completedPositions >= item.levelRequired;
+          const canAfford = state.coins >= item.cost;
+          const isLocked = !isLevelMet;
           
           return (
-            <div key={item.id} className={`p-6 rounded-3xl border transition-all ${isUnlocked ? 'bg-zinc-900 border-yellow-600/50' : 'bg-black/50 border-zinc-800 grayscale'}`}>
-              <div className="flex justify-between items-start mb-4">
-                <h4 className="text-xl font-bold text-white flex items-center gap-2">
-                  {item.name}
-                  {!isUnlocked && <span className="text-zinc-600">🔒</span>}
-                </h4>
-                <div className="text-yellow-500 font-bold">{item.cost} 🪙</div>
-              </div>
-              <p className="text-sm text-zinc-400 mb-6">{item.description}</p>
-              
-              {!isUnlocked ? (
-                <div className="flex flex-col space-y-3">
-                  <div className="text-xs text-zinc-500 flex justify-between">
-                    <span>Progresso necessário: {item.unlockRequirement}</span>
-                    <span>{state.completedPositions}/{item.requiredCount}</span>
-                  </div>
-                  <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                    <div 
-                      className="bg-yellow-600 h-full transition-all" 
-                      style={{ width: `${Math.min(100, (state.completedPositions / item.requiredCount) * 100)}%` }}
-                    />
-                  </div>
-                  <button 
-                    disabled={!canUnlock}
-                    onClick={() => onUnlock(item.id, item.cost)}
-                    className={`mt-2 py-3 rounded-xl font-bold uppercase transition-all ${canUnlock ? 'bg-yellow-600 text-black hover:bg-yellow-500' : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}`}
-                  >
-                    Desbloquear
-                  </button>
+            <div key={item.id} className={`bg-[#0f1525]/80 border-2 border-zinc-800/50 rounded-[3.5rem] p-10 relative overflow-hidden transition-all duration-500 ${isLocked ? 'grayscale opacity-80' : 'hover:border-yellow-500/30 shadow-xl'}`}>
+              {isLocked && (
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center space-y-3">
+                   <div className="text-4xl text-white/40">🔒</div>
+                   <span className="text-white font-black text-[10px] uppercase tracking-[0.3em] bg-black/40 px-4 py-2 rounded-full border border-white/10">
+                    NÍVEL {item.levelRequired} NECESSÁRIO
+                   </span>
                 </div>
-              ) : (
-                <button className="w-full bg-white text-black py-3 rounded-xl font-bold uppercase hover:bg-zinc-200 transition-all">
-                  Jogar Agora
-                </button>
               )}
+              
+              <div className="flex justify-between items-start">
+                <div className="space-y-4 flex-1 pr-4">
+                  <div className="w-14 h-14 bg-zinc-900 rounded-[1.5rem] flex items-center justify-center text-3xl shadow-inner">
+                    {item.icon}
+                  </div>
+                  <h3 className="text-2xl font-black text-white italic tracking-tighter uppercase leading-none">{item.name}</h3>
+                  <p className="text-zinc-500 text-sm font-medium leading-relaxed">{item.description}</p>
+                </div>
+                
+                <div className="flex flex-col items-end space-y-6">
+                  {!isUnlocked ? (
+                    <>
+                      <div className="flex flex-col items-end">
+                        <span className="text-zinc-500 text-[9px] font-black uppercase tracking-widest mb-1">CUSTO</span>
+                        <span className="text-yellow-500 font-black text-2xl">{item.cost} 🪙</span>
+                      </div>
+                      <button 
+                        onClick={() => onUnlock(item.id, item.cost)}
+                        disabled={!isLevelMet || !canAfford}
+                        className={`px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl transition-all ${isLevelMet && canAfford ? 'bg-white text-black hover:scale-105' : 'bg-zinc-800 text-zinc-600'}`}
+                      >
+                        ADQUIRIR AGORA
+                      </button>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-end space-y-2">
+                       <span className="bg-green-500/10 text-green-500 text-[10px] font-black px-6 py-2 rounded-full border border-green-500/20 uppercase tracking-widest">DESBLOQUEADO</span>
+                       <button className="text-white/60 text-[10px] font-bold underline">Jogar Agora</button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           );
         })}

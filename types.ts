@@ -10,7 +10,7 @@ export interface GameItem {
   nome: string;
   descricao: string;
   instrucoesDetalhes: string;
-  categoria: Category;
+  categoria: Category | string;
   iconeSvg: string;
 }
 
@@ -23,9 +23,5 @@ export interface UserState {
   unlockedGames: string[];
   isOnboarded: boolean;
   ageVerified: boolean;
-}
-
-export interface DiceResult {
-  action: string;
-  bodyPart: string;
+  tutorialsCompleted: string[]; // Store IDs of games already explained
 }

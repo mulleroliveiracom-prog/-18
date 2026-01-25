@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { UserState } from '../types';
 
-const STORAGE_KEY = 'casino_vip_state';
+const STORAGE_KEY = 'luna_sutra_state_v3';
 
 const INITIAL_STATE: UserState = {
   userName: '',
@@ -12,7 +12,8 @@ const INITIAL_STATE: UserState = {
   history: [],
   unlockedGames: [],
   isOnboarded: false,
-  ageVerified: false
+  ageVerified: false,
+  tutorialsCompleted: []
 };
 
 export function useGameStore() {
@@ -29,29 +30,20 @@ export function useGameStore() {
     setState(prev => ({ ...prev, userName, partnerName, isOnboarded: true, ageVerified: true }));
   };
 
-  const addCompletion = (itemId: string) => {
+  const addCompletion = (itemId: string, reward: number = 20) => {
     setState(prev => {
-      const newCoins = prev.coins + 10;
+      const newCoins = prev.coins + reward;
       const newCompleted = prev.completedPositions + 1;
       const newHistory = [itemId, ...prev.history].slice(0, 100);
-      
-      // Milestone rewards
-      let bonusCoins = 0;
-      const newlyUnlocked: string[] = [...prev.unlockedGames];
-
-      if (newCompleted === 10) bonusCoins += 50;
-      if (newCompleted === 20) newlyUnlocked.push('oracle');
-      if (newCompleted === 50) newlyUnlocked.push('crystal_dice');
-      if (newCompleted === 100) bonusCoins += 1000;
-
-      return {
-        ...prev,
-        coins: newCoins + bonusCoins,
-        completedPositions: newCompleted,
-        history: newHistory,
-        unlockedGames: newlyUnlocked
-      };
+      return { ...prev, coins: newCoins, completedPositions: newCompleted, history: newHistory };
     });
+  };
+
+  const completeTutorial = (gameId: string) => {
+    setState(prev => ({
+      ...prev,
+      tutorialsCompleted: [...new Set([...prev.tutorialsCompleted, gameId])]
+    }));
   };
 
   const unlockGame = (gameId: string, cost: number) => {
@@ -66,5 +58,5 @@ export function useGameStore() {
     return false;
   };
 
-  return { state, updateProfile, addCompletion, unlockGame };
+  return { state, updateProfile, addCompletion, unlockGame, completeTutorial };
 }
