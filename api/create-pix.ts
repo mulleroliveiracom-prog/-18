@@ -13,18 +13,17 @@ export default async function handler(req: any, res: any) {
 
   try {
     const paymentData = {
-      transaction_amount: 0.01,
-      description: 'Luna Sutra VIP - Teste Final Integração',
+      transaction_amount: 1.00, // Alterado de 0.01 para 1.00 conforme solicitado
+      description: 'Luna Sutra VIP - Ativação Vitalícia',
       payment_method_id: 'pix',
-      // Purpose field as requested to avoid refusal of low value payments
       metadata: {
         purpose: 'wallet_purchase',
-        test_mode: 'true'
+        test_mode: 'false'
       },
       payer: {
         email: 'contato@lunasutra.com',
         first_name: 'Cliente',
-        last_name: 'Empresa'
+        last_name: 'LunaSutra'
       },
       installments: 1
     };
@@ -34,7 +33,7 @@ export default async function handler(req: any, res: any) {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
-        'X-Idempotency-Key': `luna-test-${Date.now()}`
+        'X-Idempotency-Key': `luna-prod-${Date.now()}`
       },
       body: JSON.stringify(paymentData)
     });
@@ -42,18 +41,18 @@ export default async function handler(req: any, res: any) {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('[MP API ERROR RESPONSE]', JSON.stringify(data, null, 2));
+      console.error('[MP API ERROR FULL RESPONSE]', JSON.stringify(data, null, 2));
+      // Retorna o motivo real da falha da API
       return res.status(response.status).json({ 
-        message: 'Mercado Pago recusou a transação', 
-        details: data.message || 'Erro desconhecido'
+        message: 'O Mercado Pago recusou a transação', 
+        details: data.message || data.cause?.[0]?.description || 'Erro desconhecido na API do Mercado Pago'
       });
     }
 
-    // A estrutura do QR Code no Mercado Pago é aninhada em point_of_interaction
     const pixCode = data.point_of_interaction?.transaction_data?.qr_code;
     
     if (!pixCode) {
-      throw new Error('Pix code não gerado pelo Mercado Pago');
+      throw new Error('Pix code não gerado pelo Mercado Pago. Verifique as configurações da conta.');
     }
 
     return res.status(200).json({

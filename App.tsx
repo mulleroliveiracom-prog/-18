@@ -1,5 +1,5 @@
 
-import React, { Component, useState, useEffect, ReactNode, ErrorInfo } from 'react';
+import React, { useState, useEffect, ReactNode, ErrorInfo } from 'react';
 import { Category, GameItem } from './types';
 import { useGameStore } from './hooks/useGameStore';
 import { Wheel } from './components/Wheel';
@@ -10,8 +10,8 @@ import { cardChallenges, slotActions, slotTargets, slotIntensities } from './dat
 interface ErrorBoundaryProps { children?: ReactNode; }
 interface ErrorBoundaryState { hasError: boolean; }
 
-// Fix: Changed React.Component to Component (imported directly from 'react') to ensure TypeScript correctly recognizes the props property.
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+// Use React.Component explicitly to ensure 'props' and 'state' are correctly inherited and typed in TypeScript.
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   state: ErrorBoundaryState = { hasError: false };
   static getDerivedStateFromError(_: Error): ErrorBoundaryState { return { hasError: true }; }
   componentDidCatch(error: Error, errorInfo: ErrorInfo) { console.error("Luna Crash Log:", error, errorInfo); }
@@ -25,7 +25,6 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
         </div>
       );
     }
-    // Fix: line 27 error was here. By extending Component directly, this.props is properly typed.
     return this.props.children;
   }
 }
@@ -184,7 +183,7 @@ const PixModal: React.FC<{ pixCode: string; onCheck: () => void; isChecking: boo
         <div className="absolute top-0 left-0 w-full h-full animate-shimmer pointer-events-none opacity-10"></div>
         <div className="space-y-1 relative z-10">
           <h2 className="text-xl font-black text-white uppercase italic tracking-tighter">ACESSO VITALÍCIO</h2>
-          <p className="text-yellow-500 text-[8px] font-black uppercase tracking-[0.3em]">OFERTA VIP R$ 0,01</p>
+          <p className="text-yellow-500 text-[8px] font-black uppercase tracking-[0.3em]">OFERTA VIP R$ 1,00</p>
         </div>
 
         <div className="space-y-2 relative z-10 flex flex-col items-center">
@@ -287,7 +286,7 @@ export default function App() {
   const handleCreatePix = async () => {
     if (state.isVip) return;
     setIsGeneratingPix(true);
-    setPixCode(null); // Reset pix code before generating new one
+    setPixCode(null);
     try {
       const response = await fetch('/api/create-pix', { 
         method: 'POST',
@@ -300,11 +299,13 @@ export default function App() {
         setPaymentId(data.payment_id);
         localStorage.setItem('luna_last_payment_id', data.payment_id);
       } else {
-        alert(data.message || 'Erro ao gerar Pix. Tente novamente.');
+        // Exibe o motivo real da falha retornado pela API
+        const errorMsg = data.details || data.message || 'Erro ao gerar Pix.';
+        alert(`Ocorreu um erro: ${errorMsg}`);
       }
     } catch (err) { 
       console.error(err); 
-      alert('Erro de conexão ao gerar Pix.'); 
+      alert('Erro crítico de conexão ao servidor de pagamentos.'); 
     }
     finally { setIsGeneratingPix(false); }
   };
@@ -402,7 +403,7 @@ export default function App() {
                     <h2 className="text-3xl font-black text-yellow-500 uppercase italic tracking-tighter">Área VIP Luna</h2>
                     <div className="bg-[#0f1525] p-8 rounded-[2.5rem] border-4 border-yellow-500/30 space-y-6 relative overflow-hidden shadow-2xl">
                        <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest">LIBERAÇÃO IMEDIATA</p>
-                       <div className="text-white text-4xl font-black animate-pulse">R$ 0,01</div>
+                       <div className="text-white text-4xl font-black animate-pulse">R$ 1,00</div>
                        <button onClick={handleCreatePix} className="w-full py-5 bg-yellow-500 text-black rounded-2xl font-black uppercase tracking-widest text-lg shadow-[0_6px_0_rgb(161,98,7)] animate-heartbeat animate-glow-gold">LIBERAR AGORA 🔒</button>
                     </div>
                  </div>

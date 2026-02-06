@@ -56,7 +56,7 @@ export const DiceGame: React.FC<DiceGameProps> = ({ spinsRemaining, isVip, useSp
           onClick={onCheckout}
           className="w-full py-4 bg-yellow-500 text-black rounded-xl font-black uppercase tracking-widest text-[10px] shadow-[0_4px_0_rgb(161,98,7)] animate-heartbeat animate-glow-gold"
         >
-          LIBERAR TUDO R$ 0,01 🚀
+          LIBERAR TUDO R$ 1,00 🚀
         </button>
       </div>
     );
