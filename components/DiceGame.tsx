@@ -47,14 +47,14 @@ export const DiceGame: React.FC<DiceGameProps> = ({ spinsRemaining, isVip, useSp
 
   if (hasNoSpins) {
     return (
-      <div className="w-full max-w-sm bg-[#0f1525] border-2 border-red-500/20 p-6 rounded-[2.5rem] text-center space-y-4 shadow-2xl animate-in zoom-in">
+      <div className="w-full max-w-sm bg-[#0f1525] border-2 border-red-500/20 p-6 rounded-[2rem] text-center space-y-4 shadow-2xl animate-in zoom-in">
         <div className="text-4xl animate-bounce">🔒</div>
         <p className="text-white text-[9px] font-black uppercase italic leading-tight">
           TESTE ESGOTADO! NOVOS GIROS EM {daysUntilReset} DIAS OU LIBERE O ACESSO VITALÍCIO.
         </p>
         <button 
           onClick={onCheckout}
-          className="w-full py-4 bg-yellow-500 text-black rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-[0_4px_0_rgb(161,98,7)] animate-heartbeat"
+          className="w-full py-4 bg-yellow-500 text-black rounded-xl font-black uppercase tracking-widest text-[10px] shadow-[0_4px_0_rgb(161,98,7)] animate-heartbeat animate-glow-gold"
         >
           LIBERAR TUDO R$ 0,01 🚀
         </button>
@@ -86,7 +86,7 @@ export const DiceGame: React.FC<DiceGameProps> = ({ spinsRemaining, isVip, useSp
                 {[1, 2, 3, 4, 5, 6].map(num => <option key={num} value={num}>{num}</option>)}
               </select>
             </div>
-            <button onClick={handleHideDesire} disabled={!wish.trim()} className="w-full py-4 bg-white text-black rounded-[1.5rem] font-black text-xs uppercase tracking-widest shadow-[0_4px_0_rgb(160,160,160)] active:translate-y-1 active:shadow-none disabled:opacity-20">ESCONDER DESEJO 🤫</button>
+            <button onClick={handleHideDesire} disabled={!wish.trim()} className="w-full py-4 bg-white text-black rounded-[1.5rem] font-black text-xs uppercase tracking-widest shadow-[0_4px_0_rgb(160,160,160)] active:translate-y-1 disabled:opacity-20">ESCONDER DESEJO 🤫</button>
           </div>
         )}
 
@@ -95,10 +95,10 @@ export const DiceGame: React.FC<DiceGameProps> = ({ spinsRemaining, isVip, useSp
             <p className="text-white font-black italic text-[11px] uppercase">Tente adivinhar o número:</p>
             <div className="grid grid-cols-3 gap-2">
               {[1, 2, 3, 4, 5, 6].map(num => (
-                <button key={num} onClick={() => setGuessNumber(num)} className={`aspect-square rounded-xl border-2 font-black text-lg ${guessNumber === num ? 'bg-yellow-500 border-yellow-400 text-black scale-105' : 'bg-black border-zinc-800 text-zinc-500'}`}>{num}</button>
+                <button key={num} onClick={() => setGuessNumber(num)} className={`aspect-square rounded-xl border-2 font-black text-lg ${guessNumber === num ? 'bg-yellow-500 border-yellow-400 text-black scale-105 shadow-lg shadow-yellow-500/20' : 'bg-black border-zinc-800 text-zinc-500'}`}>{num}</button>
               ))}
             </div>
-            <button onClick={handleRoll} className="w-full py-4 bg-gradient-to-r from-yellow-600 to-yellow-400 text-black rounded-[1.5rem] font-black text-sm uppercase tracking-widest animate-heartbeat">LANÇAR DADO 🎲</button>
+            <button onClick={handleRoll} className="w-full py-4 bg-gradient-to-r from-yellow-600 via-yellow-500 to-yellow-400 text-black rounded-[1.5rem] font-black text-sm uppercase tracking-widest animate-heartbeat animate-glow-gold">LANÇAR DADO 🎲</button>
           </div>
         )}
 
@@ -114,18 +114,18 @@ export const DiceGame: React.FC<DiceGameProps> = ({ spinsRemaining, isVip, useSp
             <div className="w-16 h-16 bg-zinc-900 border-4 border-yellow-500 rounded-xl flex items-center justify-center text-3xl font-black text-white mx-auto">{diceValue}</div>
             <div className="space-y-3">
               {diceValue === secretNumber ? (
-                <div className="bg-green-500/10 border-2 border-green-500/30 p-4 rounded-[2rem] space-y-2">
-                  <p className="text-green-500 font-black uppercase text-[9px]">ACERTOU! 🎉</p>
+                <div className="bg-green-500/10 border-2 border-green-500/30 p-4 rounded-[2rem] space-y-2 shadow-lg shadow-green-500/10">
+                  <p className="text-green-400 font-black uppercase text-[9px]">ACERTOU! 🎉</p>
                   <p className="text-white text-sm font-black italic">"{wish}"</p>
                 </div>
               ) : (
                 <div className="bg-red-500/10 border-2 border-red-500/30 p-4 rounded-[2rem]">
-                  <p className="text-red-500 font-black uppercase text-[9px]">ERROU! 💔</p>
+                  <p className="text-red-400 font-black uppercase text-[9px]">ERROU! 💔</p>
                   <p className="text-zinc-500 text-[10px] font-bold italic">O desejo permanece oculto.</p>
                 </div>
               )}
             </div>
-            <button onClick={() => { onComplete(30); if(!isVip) onCheckout(); else setStep('setup'); }} className="w-full py-4 bg-yellow-500 text-black rounded-[1.5rem] font-black text-xs uppercase tracking-widest shadow-[0_4px_0_rgb(161,98,7)] animate-heartbeat">CONCLUÍDO 🔓</button>
+            <button onClick={() => { onComplete(30); if(!isVip) onCheckout(); else setStep('setup'); }} className="w-full py-4 bg-yellow-500 text-black rounded-[1.5rem] font-black text-xs uppercase tracking-widest shadow-[0_4px_0_rgb(161,98,7)] animate-heartbeat animate-glow-gold">CONCLUÍDO 🔓</button>
           </div>
         )}
       </div>

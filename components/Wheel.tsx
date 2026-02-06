@@ -55,7 +55,7 @@ export const Wheel: React.FC<WheelProps> = ({ category, onComplete, history, spi
 
   return (
     <div className="flex flex-col items-center w-full max-w-[340px] mx-auto py-2">
-      <div className="relative w-[65vw] h-[65vw] max-w-[240px] max-h-[240px] mb-8 perspective-2000">
+      <div className="relative w-[65vw] h-[65vw] max-w-[220px] max-h-[220px] mb-8 perspective-2000">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6 z-20 w-8 h-10 bg-white rounded-b-2xl shadow-[0_0_20px_rgba(255,255,255,0.4)] border-2 border-zinc-950 flex items-end justify-center pb-2">
            <div className="w-3 h-3 bg-pink-600 rounded-full animate-pulse"></div>
         </div>
@@ -81,7 +81,7 @@ export const Wheel: React.FC<WheelProps> = ({ category, onComplete, history, spi
               </g>
             ))}
           </svg>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-zinc-950 rounded-full border-[3px] border-zinc-900 flex flex-col items-center justify-center text-[8px] font-black uppercase text-yellow-500">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-zinc-950 rounded-full border-[3px] border-zinc-900 flex flex-col items-center justify-center text-[7px] font-black uppercase text-yellow-500">
             <span className="italic">LUNA</span>
           </div>
         </div>
@@ -89,13 +89,13 @@ export const Wheel: React.FC<WheelProps> = ({ category, onComplete, history, spi
 
       <div className="w-full text-center space-y-4">
         {hasNoSpins ? (
-          <div className="bg-[#0f1525] border-2 border-red-500/20 p-5 rounded-[2.5rem] space-y-3 animate-in zoom-in shadow-2xl">
+          <div className="bg-[#0f1525] border-2 border-red-500/20 p-5 rounded-[2rem] space-y-3 animate-in zoom-in shadow-2xl">
             <p className="text-white text-[9px] font-black uppercase italic leading-tight">
               GIROS ESGOTADOS! NOVOS GIROS EM {daysUntilReset} DIAS OU LIBERE TUDO AGORA.
             </p>
             <button 
               onClick={onCheckout}
-              className="w-full py-4 bg-yellow-500 text-black rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg animate-heartbeat"
+              className="w-full py-4 bg-yellow-500 text-black rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg animate-heartbeat animate-glow-gold"
             >
               LIBERAR TUDO AGORA 🚀
             </button>
@@ -103,7 +103,7 @@ export const Wheel: React.FC<WheelProps> = ({ category, onComplete, history, spi
         ) : (
           <div className="space-y-4">
             <div className="flex flex-col items-center space-y-1">
-              <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">GIROS RESTANTES</span>
+              <span className="text-[7px] font-black text-zinc-500 uppercase tracking-widest">GIROS RESTANTES</span>
               <div className="flex space-x-1.5 bg-[#0f1525] p-1.5 rounded-full border border-white/5">
                 {Array.from({ length: 3 }).map((_, idx) => (
                   <div key={idx} className={`w-2 h-2 rounded-full transition-all duration-700 ${isVip ? 'bg-yellow-500 animate-pulse' : idx < spinsRemaining ? 'bg-pink-500 scale-110' : 'bg-zinc-800 opacity-20'}`}></div>
@@ -113,7 +113,7 @@ export const Wheel: React.FC<WheelProps> = ({ category, onComplete, history, spi
             <button 
               onClick={spin}
               disabled={isSpinning}
-              className="w-full py-4 bg-gradient-to-br from-yellow-600 to-yellow-500 text-black rounded-2xl font-black text-lg uppercase tracking-widest shadow-[0_6px_0_rgb(161,98,7)] animate-heartbeat active:translate-y-1 active:shadow-none transition-all"
+              className="w-full py-4 bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-600 text-black rounded-xl font-black text-lg uppercase tracking-widest shadow-[0_6px_0_rgb(161,98,7)] animate-heartbeat animate-glow-gold active:translate-y-1 transition-all"
             >
               {isSpinning ? 'GIRANDO...' : 'GIRAR 🎰'}
             </button>
