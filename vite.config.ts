@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icon-512x512.png', 'apple-touch-icon.png'],
+      includeAssets: ['icon-512x512.png'],
       manifest: {
         name: 'Luna Sutra',
         short_name: 'Luna Sutra',
@@ -19,12 +19,14 @@ export default defineConfig({
           {
             src: 'icon-512x512.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           },
           {
             src: 'icon-512x512.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           }
         ]
       }

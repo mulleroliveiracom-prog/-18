@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Category, GameItem } from './types';
 import { useGameStore } from './hooks/useGameStore';
@@ -5,7 +6,7 @@ import { Wheel } from './components/Wheel';
 import { Store } from './components/Store';
 import { cardChallenges, slotActions, slotTargets, slotIntensities } from './data/content';
 
-// Fix: Explicitly define Props and State interfaces for ErrorBoundary to resolve TS property errors (lines 11, 23, 38)
+// Fix: Explicitly define Props and State interfaces for ErrorBoundary
 interface ErrorBoundaryProps {
   children?: React.ReactNode;
 }
@@ -14,11 +15,17 @@ interface ErrorBoundaryState {
   hasError: boolean;
 }
 
+/**
+ * Componente de fronteira de erro para capturar exceções na árvore de componentes.
+ * Fix: Added constructor and proper generic extension to resolve 'props' property error on line 47.
+ */
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  // Fix: Explicitly declare and initialize state as a class field to ensure TypeScript recognizes the 'state' property
-  state: ErrorBoundaryState = { hasError: false };
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
-  static getDerivedStateFromError(_: Error) {
+  static getDerivedStateFromError(_: Error): ErrorBoundaryState {
     return { hasError: true };
   }
 
@@ -27,7 +34,6 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   render() {
-    // Fix: Access state safely now that it is explicitly typed and declared
     if (this.state.hasError) {
       return (
         <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 text-center">
@@ -43,7 +49,6 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         </div>
       );
     }
-    // Fix: Access props safely now that they are explicitly typed in the generic declaration
     return this.props.children;
   }
 }
