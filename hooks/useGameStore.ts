@@ -38,7 +38,6 @@ export function useGameStore() {
       const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
 
       if (now - firstSpin >= sevenDaysInMs) {
-        // Resetar giros e nova data
         parsed.spins = { ...INITIAL_SPINS };
         parsed.firstSpinDate = new Date().toISOString();
       }
@@ -99,5 +98,14 @@ export function useGameStore() {
     setState(prev => ({ ...prev, isVip: status }));
   };
 
-  return { state, updateProfile, addCompletion, unlockGame, completeTutorial, useSpin, setVipStatus };
+  const getDaysUntilReset = () => {
+    if (!state.firstSpinDate) return 7;
+    const firstSpin = new Date(state.firstSpinDate).getTime();
+    const now = new Date().getTime();
+    const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
+    const diff = sevenDaysInMs - (now - firstSpin);
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  };
+
+  return { state, updateProfile, addCompletion, unlockGame, completeTutorial, useSpin, setVipStatus, getDaysUntilReset };
 }
