@@ -23,5 +23,13 @@ export interface UserState {
   unlockedGames: string[];
   isOnboarded: boolean;
   ageVerified: boolean;
-  tutorialsCompleted: string[]; // Store IDs of games already explained
+  tutorialsCompleted: string[];
+  isVip: boolean;
+  firstSpinDate: string | null;
+  spins: {
+    wheel: number;
+    cards: number;
+    slots: number;
+    dice: number;
+  };
 }

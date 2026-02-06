@@ -2,7 +2,14 @@
 import { useState, useEffect } from 'react';
 import { UserState } from '../types';
 
-const STORAGE_KEY = 'luna_sutra_state_v3';
+const STORAGE_KEY = 'luna_sutra_state_v4';
+
+const INITIAL_SPINS = {
+  wheel: 3,
+  cards: 1,
+  slots: 0,
+  dice: 1
+};
 
 const INITIAL_STATE: UserState = {
   userName: '',
@@ -13,13 +20,31 @@ const INITIAL_STATE: UserState = {
   unlockedGames: [],
   isOnboarded: false,
   ageVerified: false,
-  tutorialsCompleted: []
+  tutorialsCompleted: [],
+  isVip: false,
+  firstSpinDate: null,
+  spins: { ...INITIAL_SPINS }
 };
 
 export function useGameStore() {
   const [state, setState] = useState<UserState>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : INITIAL_STATE;
+    const parsed = saved ? JSON.parse(saved) : INITIAL_STATE;
+    
+    // Lógica de Renovação Semanal (7 dias)
+    if (parsed.firstSpinDate) {
+      const firstSpin = new Date(parsed.firstSpinDate).getTime();
+      const now = new Date().getTime();
+      const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
+
+      if (now - firstSpin >= sevenDaysInMs) {
+        // Resetar giros e nova data
+        parsed.spins = { ...INITIAL_SPINS };
+        parsed.firstSpinDate = new Date().toISOString();
+      }
+    }
+    
+    return parsed;
   });
 
   useEffect(() => {
@@ -28,6 +53,18 @@ export function useGameStore() {
 
   const updateProfile = (userName: string, partnerName: string) => {
     setState(prev => ({ ...prev, userName, partnerName, isOnboarded: true, ageVerified: true }));
+  };
+
+  const useSpin = (type: keyof UserState['spins']) => {
+    if (state.isVip) return true;
+    if (state.spins[type] <= 0) return false;
+
+    setState(prev => {
+      const newSpins = { ...prev.spins, [type]: prev.spins[type] - 1 };
+      const firstDate = prev.firstSpinDate || new Date().toISOString();
+      return { ...prev, spins: newSpins, firstSpinDate: firstDate };
+    });
+    return true;
   };
 
   const addCompletion = (itemId: string, reward: number = 20) => {
@@ -58,5 +95,9 @@ export function useGameStore() {
     return false;
   };
 
-  return { state, updateProfile, addCompletion, unlockGame, completeTutorial };
+  const setVipStatus = (status: boolean) => {
+    setState(prev => ({ ...prev, isVip: status }));
+  };
+
+  return { state, updateProfile, addCompletion, unlockGame, completeTutorial, useSpin, setVipStatus };
 }

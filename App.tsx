@@ -1,35 +1,28 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Component, ReactNode, ErrorInfo } from 'react';
 import { Category, GameItem } from './types';
 import { useGameStore } from './hooks/useGameStore';
 import { Wheel } from './components/Wheel';
 import { Store } from './components/Store';
 import { cardChallenges, slotActions, slotTargets, slotIntensities } from './data/content';
 
-// Fix: Explicitly define Props and State interfaces for ErrorBoundary
 interface ErrorBoundaryProps {
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
 interface ErrorBoundaryState {
   hasError: boolean;
 }
 
-/**
- * Componente de fronteira de erro para capturar exceções na árvore de componentes.
- * Fix: Added constructor and proper generic extension to resolve 'props' property error on line 47.
- */
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false };
-  }
+// Fix: Use property initializer for state and ensure inheritance is correctly recognized by TypeScript
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { hasError: false };
 
   static getDerivedStateFromError(_: Error): ErrorBoundaryState {
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("Luna Crash Log:", error, errorInfo);
   }
 
@@ -52,6 +45,60 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
     return this.props.children;
   }
 }
+
+const PixModal: React.FC<{ pixCode: string; onClose: () => void }> = ({ pixCode, onClose }) => {
+  const [copied, setCopied] = useState(false);
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(pixCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[300] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-6 animate-in fade-in zoom-in duration-300">
+      <div className="bg-[#0f1525] border-4 border-yellow-500/20 w-full max-w-[340px] rounded-[3rem] p-10 text-center space-y-8 shadow-[0_0_80px_rgba(255,193,7,0.15)]">
+        <div className="space-y-2">
+          <div className="text-5xl mb-4">⚡</div>
+          <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">PAGAMENTO PIX</h2>
+          <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">LIBERAÇÃO IMEDIATA</p>
+        </div>
+
+        <div className="space-y-4">
+          <p className="text-zinc-400 text-xs font-bold leading-relaxed">
+            Copie o código abaixo e pague no app do seu banco para liberar o acesso **VITALÍCIO**.
+          </p>
+          <div className="relative">
+            <textarea 
+              readOnly 
+              value={pixCode} 
+              className="w-full bg-black/60 border-2 border-zinc-900 p-4 rounded-2xl text-[10px] text-zinc-500 font-mono h-24 resize-none focus:outline-none"
+            />
+            <button 
+              onClick={copyToClipboard}
+              className="absolute bottom-2 right-2 bg-yellow-500 text-black px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-90 transition-all"
+            >
+              {copied ? 'COPIADO! ✅' : 'COPIAR'}
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-center space-x-2 text-yellow-500 font-black text-2xl">
+            <span className="text-sm text-zinc-500 font-normal line-through">R$ 97,00</span>
+            <span>R$ 0,01</span>
+          </div>
+          <button 
+            onClick={onClose}
+            className="w-full py-4 text-zinc-600 font-black uppercase text-[10px] tracking-widest hover:text-white transition-colors"
+          >
+            FECHAR E VOLTAR
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const TutorialOverlay: React.FC<{ 
   title: string; 
@@ -129,18 +176,30 @@ const Onboarding: React.FC<{ onComplete: (n: string, p: string) => void }> = ({ 
   );
 };
 
-const CardsGame = ({ onComplete }: { onComplete: (item: any) => void }) => {
+const CardsGame = ({ onComplete, spinsRemaining, isVip, useSpin, onCheckout }: { onComplete: (item: any) => void, spinsRemaining: number, isVip: boolean, useSpin: () => boolean, onCheckout: () => void }) => {
   const [flipped, setFlipped] = useState<number[]>([]);
   
+  if (!isVip && spinsRemaining <= 0) return (
+    <div className="px-6 py-8 bg-[#0f1525] rounded-[3rem] border-4 border-red-500/30 text-center space-y-6 mx-4 animate-in zoom-in">
+      <div className="text-5xl">🔒</div>
+      <h3 className="text-2xl font-black text-white uppercase italic">Limite Atingido!</h3>
+      <p className="text-zinc-400 text-xs font-bold leading-relaxed">Libere acesso TOTAL e VITALÍCIO agora por apenas R$ 0,01.</p>
+      <button onClick={onCheckout} className="w-full py-5 bg-yellow-500 text-black rounded-2xl font-black uppercase tracking-widest text-sm">LIBERAR ACESSO VITALÍCIO 🚀</button>
+    </div>
+  );
+
   return (
     <div className="px-6 py-8 space-y-10 animate-in slide-in-from-bottom duration-500 text-center">
-      <h2 className="text-5xl font-black italic text-white uppercase tracking-tighter leading-none">CARDS DA<br/>SORTE</h2>
+      <div className="space-y-2">
+        <h2 className="text-5xl font-black italic text-white uppercase tracking-tighter leading-none">CARDS DA<br/>SORTE</h2>
+        <p className="text-[10px] font-black text-pink-500 uppercase tracking-widest">{isVip ? 'Giros Ilimitados VIP' : `Giros Restantes: ${spinsRemaining}`}</p>
+      </div>
       <div className="grid grid-cols-3 gap-4 max-w-sm mx-auto">
         {Array.from({ length: 12 }).map((_, i) => (
           <div 
             key={i} 
             onClick={() => {
-              if(!flipped.includes(i)) {
+              if(!flipped.includes(i) && useSpin()) {
                 setFlipped([...flipped, i]);
                 const challenge = cardChallenges[Math.floor(Math.random() * cardChallenges.length)];
                 onComplete({ nome: "CARD REVELADO", descricao: challenge, categoria: 'Cards', id: `card-${i}-${Date.now()}` });
@@ -148,11 +207,7 @@ const CardsGame = ({ onComplete }: { onComplete: (item: any) => void }) => {
             }}
             className="aspect-[3/4] bg-[#0f1525] border-2 border-zinc-900 rounded-2xl flex items-center justify-center cursor-pointer active:scale-90 transition-all group overflow-hidden shadow-lg"
           >
-            {flipped.includes(i) ? (
-              <span className="text-3xl">🔥</span>
-            ) : (
-              <span className="text-yellow-500 text-4xl drop-shadow-[0_0_10px_rgba(255,193,7,0.2)]">❤️</span>
-            )}
+            {flipped.includes(i) ? <span className="text-3xl">🔥</span> : <span className="text-yellow-500 text-4xl">❤️</span>}
           </div>
         ))}
       </div>
@@ -160,20 +215,24 @@ const CardsGame = ({ onComplete }: { onComplete: (item: any) => void }) => {
   );
 };
 
-const SlotGame = ({ onComplete }: { onComplete: (item: any) => void }) => {
+const SlotGame = ({ onComplete, spinsRemaining, isVip, useSpin, onCheckout }: { onComplete: (item: any) => void, spinsRemaining: number, isVip: boolean, useSpin: () => boolean, onCheckout: () => void }) => {
   const [spinning, setSpinning] = useState(false);
   const [cols, setCols] = useState(["🔥", "🔞", "😈"]);
 
+  if (!isVip && spinsRemaining <= 0) return (
+    <div className="px-6 py-8 bg-[#0f1525] rounded-[3rem] border-4 border-red-500/30 text-center space-y-6 mx-4 animate-in zoom-in">
+      <div className="text-5xl">🔒</div>
+      <h3 className="text-2xl font-black text-white uppercase italic">Limite Atingido!</h3>
+      <button onClick={onCheckout} className="w-full py-5 bg-yellow-500 text-black rounded-2xl font-black uppercase tracking-widest text-sm">LIBERAR ACESSO VITALÍCIO 🚀</button>
+    </div>
+  );
+
   const spin = () => {
+    if (spinning || !useSpin()) return;
     setSpinning(true);
     const interval = setInterval(() => {
-      setCols([
-        slotActions[Math.floor(Math.random() * slotActions.length)],
-        slotTargets[Math.floor(Math.random() * slotTargets.length)],
-        slotIntensities[Math.floor(Math.random() * slotIntensities.length)]
-      ]);
+      setCols([slotActions[Math.floor(Math.random() * slotActions.length)], slotTargets[Math.floor(Math.random() * slotTargets.length)], slotIntensities[Math.floor(Math.random() * slotIntensities.length)]]);
     }, 100);
-
     setTimeout(() => {
       clearInterval(interval);
       setSpinning(false);
@@ -181,185 +240,88 @@ const SlotGame = ({ onComplete }: { onComplete: (item: any) => void }) => {
       const t = slotTargets[Math.floor(Math.random() * slotTargets.length)];
       const i = slotIntensities[Math.floor(Math.random() * slotIntensities.length)];
       setCols([a, t, i]);
-      onComplete({
-        id: 'slot-res-' + Date.now(),
-        nome: "COMBINAÇÃO PROIBIDA",
-        descricao: `${a} ${t} ${i}!`,
-        categoria: 'Slot'
-      });
+      onComplete({ id: 'slot-res-' + Date.now(), nome: "COMBINAÇÃO PROIBIDA", descricao: `${a} ${t} ${i}!`, categoria: 'Slot' });
     }, 2000);
   };
 
   return (
     <div className="px-6 py-8 space-y-12 text-center animate-in zoom-in duration-700">
-      <h2 className="text-6xl font-black text-white italic uppercase tracking-tighter leading-none">SLOT<br/>PROIBIDO</h2>
-      <div className="bg-[#0f1525] p-6 rounded-[3rem] border-8 border-zinc-950 flex space-x-3 max-w-sm mx-auto shadow-2xl relative">
+      <div className="space-y-2">
+        <h2 className="text-6xl font-black text-white italic uppercase tracking-tighter leading-none">SLOT<br/>PROIBIDO</h2>
+        <p className="text-[10px] font-black text-yellow-500 uppercase tracking-widest">{isVip ? 'Giros Ilimitados VIP' : `Giros Restantes: ${spinsRemaining}`}</p>
+      </div>
+      <div className="bg-[#0f1525] p-6 rounded-[3rem] border-8 border-zinc-950 flex space-x-3 max-w-sm mx-auto">
          {cols.map((val, i) => (
-           <div key={i} className={`flex-1 aspect-[1/2] bg-zinc-950 rounded-2xl border-2 border-zinc-900 flex items-center justify-center p-2 text-center text-xs font-black text-yellow-500 italic shadow-inner transition-all ${spinning ? 'opacity-40' : ''}`}>
-             <span className="uppercase tracking-tighter leading-tight break-words">{val}</span>
-           </div>
+           <div key={i} className="flex-1 aspect-[1/2] bg-zinc-950 rounded-2xl border-2 border-zinc-900 flex items-center justify-center p-2 text-center text-xs font-black text-yellow-500 italic uppercase leading-tight">{val}</div>
          ))}
       </div>
-      <button onClick={spin} disabled={spinning} className="px-12 py-6 bg-gradient-to-r from-yellow-600 to-yellow-500 rounded-[2rem] font-black text-2xl uppercase tracking-widest text-black shadow-xl active:translate-y-2 active:shadow-none transition-all disabled:opacity-50">
-        {spinning ? 'SORTEANDO...' : '⚡ PUXAR'}
-      </button>
-    </div>
-  );
-};
-
-const SurpriseDice: React.FC<{ onWin: (desire: string) => void }> = ({ onWin }) => {
-  const [desire, setDesire] = useState('');
-  const [secretNum, setSecretNum] = useState(1);
-  const [guessNum, setGuessNum] = useState(1);
-  const [isRolling, setIsRolling] = useState(false);
-  const [rolled, setRolled] = useState<number | null>(null);
-  const [phase, setPhase] = useState<'setup' | 'hidden' | 'result'>('setup');
-
-  const rollDice = () => {
-    setIsRolling(true);
-    setTimeout(() => {
-      const res = Math.floor(Math.random() * 6) + 1;
-      setRolled(res);
-      setIsRolling(false);
-      setPhase('result');
-      if (guessNum === secretNum) {
-        onWin(desire);
-      }
-    }, 2000);
-  };
-
-  const DiceFace = ({ n, rolling }: { n: number | null, rolling: boolean }) => (
-    <div className={`relative w-24 h-24 mx-auto perspective-1000 ${rolling ? 'animate-spin' : ''}`}>
-      <div className="w-full h-full bg-gradient-to-br from-white to-zinc-200 rounded-2xl flex items-center justify-center text-5xl text-zinc-900 font-black shadow-xl border-4 border-zinc-300">
-        {rolling ? '🎲' : n || '🎲'}
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="w-full max-w-sm bg-[#0f1525] p-8 rounded-[2.5rem] border-4 border-zinc-950 shadow-2xl space-y-8 text-center my-10 mx-auto">
-      <h3 className="text-2xl font-black text-yellow-500 uppercase italic tracking-tighter">DADO DA SURPRESA 3D</h3>
-
-      {phase === 'setup' && (
-        <div className="space-y-6 animate-in slide-in-from-top">
-          <textarea value={desire} onChange={e => setDesire(e.target.value)} placeholder="O que deseja que seu par faça?" className="w-full bg-black/50 border-2 border-zinc-900 p-4 rounded-2xl text-white h-32 outline-none focus:border-yellow-500 transition-all font-black text-base italic" />
-          <div className="flex items-center justify-between bg-black/40 p-4 rounded-2xl">
-            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">NÚMERO DA SORTE</span>
-            <select value={secretNum} onChange={e => setSecretNum(Number(e.target.value))} className="bg-zinc-900 text-yellow-500 px-4 py-2 rounded-xl font-black text-xl border-2 border-yellow-500/20">
-              {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
-          <button onClick={() => desire && setPhase('hidden')} className="w-full bg-yellow-600 py-5 rounded-2xl font-black text-white uppercase tracking-widest text-lg shadow-lg">ESCONDER DESEJO 🤫</button>
-        </div>
-      )}
-
-      {phase === 'hidden' && (
-        <div className="space-y-8 animate-in zoom-in">
-          <div className="p-6 bg-zinc-950 rounded-2xl border-2 border-yellow-500/10">
-            <p className="text-white text-lg font-black leading-tight italic">Parceiro, adivinhe o número secreto!</p>
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-             {[1, 2, 3, 4, 5, 6].map(n => (
-               <button key={n} onClick={() => setGuessNum(n)} className={`w-12 h-12 rounded-xl font-black text-lg transition-all ${guessNum === n ? 'bg-yellow-500 text-black scale-110 shadow-lg' : 'bg-zinc-800 text-zinc-600'}`}>{n}</button>
-             ))}
-          </div>
-          <DiceFace n={null} rolling={isRolling} />
-          <button onClick={rollDice} disabled={isRolling} className="w-full bg-yellow-500 py-5 rounded-2xl font-black text-black uppercase tracking-widest text-xl shadow-xl active:translate-y-1 transition-all">LANÇAR DADO 🎲</button>
-        </div>
-      )}
-
-      {phase === 'result' && (
-        <div className="space-y-6 animate-in bounce-in">
-          <DiceFace n={rolled} rolling={false} />
-          {guessNum === secretNum ? (
-            <div className="space-y-4">
-              <h4 className="text-2xl font-black text-green-500 uppercase tracking-tighter">ACERTOU! 🎁</h4>
-              <div className="p-6 bg-black/80 rounded-2xl border-2 border-green-500/40">
-                <p className="text-white text-xl font-black italic">"{desire}"</p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <h4 className="text-2xl font-black text-red-600 uppercase tracking-tighter">ERROU! 💥</h4>
-              <p className="text-zinc-400 text-sm font-bold italic">O número secreto era {secretNum}. O desejo continua oculto...</p>
-            </div>
-          )}
-          <button onClick={() => setPhase('setup')} className="w-full bg-zinc-900 py-4 rounded-xl font-black text-zinc-600 uppercase tracking-widest text-xs">NOVA RODADA</button>
-        </div>
-      )}
+      <button onClick={spin} disabled={spinning} className="px-12 py-6 bg-gradient-to-r from-yellow-600 to-yellow-500 rounded-[2rem] font-black text-2xl uppercase tracking-widest text-black shadow-xl disabled:opacity-50">⚡ PUXAR</button>
     </div>
   );
 };
 
 export default function App() {
-  const { state, updateProfile, addCompletion, unlockGame, completeTutorial } = useGameStore();
+  const { state, updateProfile, addCompletion, unlockGame, completeTutorial, useSpin, setVipStatus } = useGameStore();
   const [activeTab, setActiveTab] = useState<'girar' | 'cards' | 'slot' | 'loja' | 'vip'>('girar');
   const [category, setCategory] = useState<Category>(Category.Warmup);
   const [activeMission, setActiveMission] = useState<any>(null);
   const [missionTimer, setMissionTimer] = useState<number | null>(null);
+  const [isGeneratingPix, setIsGeneratingPix] = useState(false);
+  const [pixCode, setPixCode] = useState<string | null>(null);
 
   useEffect(() => {
     let interval: any;
     if (missionTimer !== null && missionTimer > 0) {
-      interval = setInterval(() => {
-        setMissionTimer(prev => (prev !== null ? prev - 1 : 0));
-      }, 1000);
+      interval = setInterval(() => setMissionTimer(prev => (prev !== null ? prev - 1 : 0)), 1000);
     } else if (missionTimer === 0) {
       clearInterval(interval);
     }
     return () => clearInterval(interval);
   }, [missionTimer]);
 
-  if (!state.isOnboarded) return <ErrorBoundary><Onboarding onComplete={updateProfile} /></ErrorBoundary>;
-
-  const tutorialContent = {
-    girar: { 
-      title: "ROLETA LUNA", 
-      icon: "🎰", 
-      description: "1. Escolha a intensidade: Aquecimento, Ousadia ou Posição.\n2. Clique em GIRAR para sortear um desafio.\n3. Após o sorteio, clique em INICIAR AGORA.\n4. Realize a missão por 35 segundos.\n5. Somente após o tempo zerar, você poderá clicar em CONCLUÍDO e ganhar 20 moedas!" 
-    },
-    dado: { 
-      title: "DADO DA SURPRESA", 
-      icon: "🎲", 
-      description: "1. Um parceiro escreve um desejo oculto e um número de 1 a 6.\n2. O outro parceiro tenta adivinhar o número secreto.\n3. Se você acertar o número secreto do seu par, o desejo é revelado para ser cumprido na hora!" 
-    },
-    cards: { 
-      title: "CARDS DA SORTE", 
-      icon: "🎴", 
-      description: "1. Toque em qualquer card para revelar uma missão.\n2. Clique em INICIAR AGORA e realize a ação por 30 segundos.\n3. Ao completar o tempo, clique em CONCLUÍDO para ganhar 10 moedas!" 
-    },
-    slot: { 
-      title: "SLOT PROIBIDO", 
-      icon: "⚡", 
-      description: "1. Puxe a alavanca para girar combinações eróticas.\n2. Clique em INICIAR AGORA e realize a ação por 30 segundos.\n3. Ganhe 10 moedas por cada rodada de sucesso!" 
+  const handleCreatePix = async () => {
+    setIsGeneratingPix(true);
+    try {
+      const response = await fetch('/api/create-pix', { method: 'POST' });
+      const data = await response.json();
+      if (data.pix_code) {
+        setPixCode(data.pix_code);
+      } else {
+        alert('Erro ao gerar Pix. Tente novamente.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Erro de conexão com o servidor de pagamentos.');
+    } finally {
+      setIsGeneratingPix(false);
     }
   };
 
-  const handleStartMissionTimer = () => {
-    setMissionTimer(30);
+  if (!state.isOnboarded) return <ErrorBoundary><Onboarding onComplete={updateProfile} /></ErrorBoundary>;
+
+  const tutorialContent = {
+    girar: { title: "ROLETA LUNA", icon: "🎰", description: "1. Escolha a intensidade.\n2. Clique em GIRAR.\n3. Realize a missão por 35 segundos.\n4. Ganhe 20 moedas!" },
+    cards: { title: "CARDS DA SORTE", icon: "🎴", description: "Revele cards e ganhe 10 moedas!" },
+    slot: { title: "SLOT PROIBIDO", icon: "⚡", description: "Puxe a alavanca para combinações picantes!" }
   };
 
-  const closeMission = () => {
-    setActiveMission(null);
-    setMissionTimer(null);
-  };
+  const closeMission = () => { setActiveMission(null); setMissionTimer(null); };
 
   return (
     <ErrorBoundary>
       <div className="h-full flex flex-col bg-black text-white">
         
-        {activeTab === 'girar' && !state.tutorialsCompleted.includes('girar') && (
-          <TutorialOverlay {...tutorialContent.girar} onClose={() => completeTutorial('girar')} />
-        )}
-        {activeTab === 'girar' && state.tutorialsCompleted.includes('girar') && !state.tutorialsCompleted.includes('dado') && (
-          <TutorialOverlay {...tutorialContent.dado} onClose={() => completeTutorial('dado')} />
+        {pixCode && <PixModal pixCode={pixCode} onClose={() => setPixCode(null)} />}
+        
+        {isGeneratingPix && (
+          <div className="fixed inset-0 z-[400] bg-black/80 flex flex-col items-center justify-center space-y-4">
+            <div className="w-12 h-12 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-yellow-500 font-black uppercase tracking-widest text-xs">Gerando Pix Seguro...</p>
+          </div>
         )}
 
-        {activeTab === 'cards' && !state.tutorialsCompleted.includes('cards') && (
-          <TutorialOverlay {...tutorialContent.cards} onClose={() => completeTutorial('cards')} />
-        )}
-        {activeTab === 'slot' && !state.tutorialsCompleted.includes('slot') && (
-          <TutorialOverlay {...tutorialContent.slot} onClose={() => completeTutorial('slot')} />
+        {activeTab === 'girar' && !state.tutorialsCompleted.includes('girar') && (
+          <TutorialOverlay {...tutorialContent.girar} onClose={() => completeTutorial('girar')} />
         )}
 
         <header className="px-8 pt-10 pb-4 space-y-6">
@@ -368,19 +330,12 @@ export default function App() {
                <h1 className="text-[10px] font-black tracking-[0.4em] text-yellow-500 uppercase opacity-60">LUNA CLUB</h1>
                <p className="text-2xl font-black italic tracking-tighter uppercase leading-none">{state.userName} <span className="text-yellow-500">&</span> {state.partnerName}</p>
             </div>
-            <div className="bg-[#0f1525] px-4 py-2 rounded-2xl border-2 border-zinc-950 flex items-center space-x-2 shadow-lg">
-              <span className="text-xl font-black text-yellow-500">{state.coins}</span>
-              <span className="text-base animate-pulse">🪙</span>
-            </div>
-          </div>
-          
-          <div className="bg-[#0f1525]/80 p-6 rounded-[2rem] border-2 border-zinc-950 space-y-3 shadow-lg">
-            <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500 tracking-[0.2em]">
-              <span>CONEXÃO</span>
-              <span className="text-yellow-500">{state.completedPositions} / 5</span>
-            </div>
-            <div className="w-full bg-zinc-950 h-3 rounded-full overflow-hidden border-2 border-zinc-900 p-0.5">
-              <div className="bg-gradient-to-r from-yellow-600 to-yellow-400 h-full rounded-full transition-all duration-1000" style={{ width: `${Math.min(100, (state.completedPositions / 5) * 100)}%` }}></div>
+            <div className="flex flex-col items-end space-y-2">
+              <div className="bg-[#0f1525] px-4 py-2 rounded-2xl border-2 border-zinc-950 flex items-center space-x-2 shadow-lg">
+                <span className="text-xl font-black text-yellow-500">{state.coins}</span>
+                <span className="text-base animate-pulse">🪙</span>
+              </div>
+              {state.isVip && <span className="text-[8px] font-black bg-yellow-500 text-black px-3 py-1 rounded-full uppercase tracking-widest animate-pulse">VIP ATIVO</span>}
             </div>
           </div>
         </header>
@@ -393,77 +348,27 @@ export default function App() {
                   <button key={cat} onClick={() => setCategory(cat)} className={`flex-1 py-3 rounded-2xl text-[9px] font-black uppercase tracking-[0.1em] transition-all ${category === cat ? 'bg-yellow-500 text-black shadow-md' : 'text-zinc-600'}`}>{cat}</button>
                 ))}
               </div>
-              
-              <div className="w-full max-w-sm flex justify-center">
-                <Wheel category={category} history={state.history} onComplete={(item) => addCompletion(item.id)} />
-              </div>
-
-              <SurpriseDice onWin={(desire) => setActiveMission({ nome: "DESEJO CONCEDIDO!", descricao: desire, categoria: "Surpresa", id: "surprise-win-" + Date.now(), reward: 0 })} />
+              <Wheel category={category} history={state.history} onComplete={(item) => addCompletion(item.id)} spinsRemaining={state.spins.wheel} isVip={state.isVip} onSpinUsed={() => useSpin('wheel')} onCheckout={handleCreatePix} />
             </div>
           )}
 
-          {activeTab === 'cards' && <CardsGame onComplete={(item) => setActiveMission({...item, reward: 10})} />}
-          {activeTab === 'slot' && <SlotGame onComplete={(item) => setActiveMission({...item, reward: 10})} />}
+          {activeTab === 'cards' && <CardsGame onComplete={(item) => setActiveMission({...item, reward: 10})} spinsRemaining={state.spins.cards} isVip={state.isVip} useSpin={() => useSpin('cards')} onCheckout={handleCreatePix} />}
+          {activeTab === 'slot' && <SlotGame onComplete={(item) => setActiveMission({...item, reward: 10})} spinsRemaining={state.spins.slots} isVip={state.isVip} useSpin={() => useSpin('slots')} onCheckout={handleCreatePix} />}
           {activeTab === 'loja' && <Store state={state} onUnlock={unlockGame} />}
-        </main>
-
-        {activeMission && (
-          <div className="fixed inset-0 z-[250] bg-black/98 backdrop-blur-3xl flex items-center justify-center p-6 animate-in fade-in duration-300">
-             <div className="bg-[#0f1525] border-6 border-yellow-500/20 w-full max-w-[340px] rounded-[3rem] overflow-hidden shadow-2xl text-center p-10 space-y-8">
-                <div className="space-y-2">
-                   <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter leading-tight">{activeMission.nome}</h2>
-                   <span className="inline-block bg-yellow-500/10 text-yellow-500 text-[9px] font-black px-6 py-2 rounded-full uppercase tracking-[0.3em] border border-yellow-500/20">{activeMission.categoria}</span>
-                </div>
-                <div className="p-6 bg-black/80 rounded-[2rem] border-2 border-zinc-900">
-                  <p className="text-2xl text-white font-black leading-tight italic">"{activeMission.descricao}"</p>
-                </div>
-
-                {missionTimer !== null && (
-                  <div className="space-y-4">
-                     <div className="text-6xl font-black text-yellow-500 font-mono">
-                       00:{missionTimer < 10 ? `0${missionTimer}` : missionTimer}
-                     </div>
-                     <div className="w-full bg-zinc-900 h-2 rounded-full overflow-hidden border border-zinc-800">
-                       <div 
-                         className="bg-gradient-to-r from-yellow-600 to-yellow-400 h-full transition-all duration-1000 ease-linear"
-                         style={{ width: `${(missionTimer / 30) * 100}%` }}
-                       ></div>
-                     </div>
+          {activeTab === 'vip' && (
+            <div className="px-8 py-12 space-y-12 text-center animate-in slide-in-from-bottom">
+               <div className="text-8xl mb-6">🏆</div>
+               <h2 className="text-4xl font-black text-yellow-500 uppercase italic tracking-tighter leading-none">Área VIP Luna</h2>
+               <div className="bg-[#0f1525] p-10 rounded-[3rem] border-4 border-yellow-500/20 space-y-8">
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">OFERTA PIX VITALÍCIA</span>
+                    <div className="text-white text-5xl font-black">R$ 0,01</div>
                   </div>
-                )}
-
-                <div className="flex flex-col space-y-4">
-                  <button 
-                    onClick={() => {
-                      if (missionTimer === null && activeMission.reward > 0) {
-                        handleStartMissionTimer();
-                      } else {
-                        addCompletion(activeMission.id, activeMission.reward); 
-                        closeMission();
-                      }
-                    }} 
-                    disabled={missionTimer !== null && missionTimer > 0}
-                    className={`w-full py-6 font-black rounded-2xl uppercase tracking-widest text-xl transition-all shadow-lg ${
-                      (missionTimer === null && activeMission.reward > 0) 
-                        ? 'bg-gradient-to-r from-yellow-600 to-yellow-500 text-black shadow-[0_8px_0_rgb(161,98,7)]' 
-                        : (missionTimer === 0 || activeMission.reward === 0) 
-                          ? 'bg-yellow-500 text-black shadow-[0_8px_0_rgb(161,98,7)]' 
-                          : 'bg-zinc-800 text-zinc-500 opacity-50'
-                    }`}
-                  >
-                    {missionTimer === null && activeMission.reward > 0 ? 'COMEÇAR AGORA ⏳' : (missionTimer === 0 || activeMission.reward === 0) ? `CONCLUÍDO! (+${activeMission.reward})` : 'AGUARDE...'}
-                  </button>
-                  <button 
-                    onClick={closeMission} 
-                    disabled={missionTimer !== null && missionTimer > 0}
-                    className={`text-zinc-600 font-black uppercase text-[9px] tracking-[0.3em] ${missionTimer !== null && missionTimer > 0 ? 'opacity-20 pointer-events-none' : ''}`}
-                  >
-                    ✕ FECHAR
-                  </button>
-                </div>
-             </div>
-          </div>
-        )}
+                  <button onClick={handleCreatePix} className="w-full py-6 bg-yellow-500 text-black rounded-2xl font-black uppercase tracking-widest text-xl shadow-[0_8px_0_rgb(161,98,7)]">LIBERAR AGORA 🔒</button>
+               </div>
+            </div>
+          )}
+        </main>
 
         <nav className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-xl border-t-4 border-zinc-950 px-6 py-6 flex justify-around items-center z-50 rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.8)] pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
           {[
@@ -479,6 +384,26 @@ export default function App() {
             </button>
           ))}
         </nav>
+
+        {activeMission && (
+          <div className="fixed inset-0 z-[250] bg-black/98 backdrop-blur-3xl flex items-center justify-center p-6 animate-in fade-in duration-300">
+             <div className="bg-[#0f1525] border-6 border-yellow-500/20 w-full max-w-[340px] rounded-[3rem] overflow-hidden shadow-2xl text-center p-10 space-y-8">
+                <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter leading-tight">{activeMission.nome}</h2>
+                <div className="p-6 bg-black/80 rounded-[2rem] border-2 border-zinc-900">
+                  <p className="text-2xl text-white font-black leading-tight italic">"{activeMission.descricao}"</p>
+                </div>
+                {missionTimer !== null && (
+                  <div className="text-6xl font-black text-yellow-500 font-mono">00:{missionTimer < 10 ? `0${missionTimer}` : missionTimer}</div>
+                )}
+                <div className="flex flex-col space-y-4">
+                  <button onClick={() => { if (missionTimer === null) setMissionTimer(30); else { addCompletion(activeMission.id, activeMission.reward); closeMission(); } }} disabled={missionTimer !== null && missionTimer > 0} className="w-full py-6 font-black rounded-2xl uppercase tracking-widest text-xl bg-yellow-500 text-black">
+                    {missionTimer === null ? 'COMEÇAR AGORA ⏳' : missionTimer === 0 ? `CONCLUÍDO! (+${activeMission.reward})` : 'AGUARDE...'}
+                  </button>
+                  <button onClick={closeMission} disabled={missionTimer !== null && missionTimer > 0} className="text-zinc-600 font-black uppercase text-[9px] tracking-[0.3em]">✕ FECHAR</button>
+                </div>
+             </div>
+          </div>
+        )}
       </div>
     </ErrorBoundary>
   );
