@@ -4,6 +4,7 @@ import { Category, GameItem } from './types';
 import { useGameStore } from './hooks/useGameStore';
 import { Wheel } from './components/Wheel';
 import { Store } from './components/Store';
+import { DiceGame } from './components/DiceGame';
 import { cardChallenges, slotActions, slotTargets, slotIntensities } from './data/content';
 
 interface ErrorBoundaryProps {
@@ -14,10 +15,13 @@ interface ErrorBoundaryState {
   hasError: boolean;
 }
 
-// Fixed ErrorBoundary by using React.Component and initializing state directly to resolve TS errors.
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  // Initialize state directly in the class to ensure it exists on the type
-  state: ErrorBoundaryState = { hasError: false };
+// Fix: Use the named 'Component' import and ensure proper generic typing for state and props.
+// This resolves "Property 'state' does not exist" and "Property 'props' does not exist" errors.
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
   static getDerivedStateFromError(_: Error): ErrorBoundaryState {
     return { hasError: true };
@@ -28,7 +32,6 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   render() {
-    // Correctly accessing this.state.hasError
     if (this.state.hasError) {
       return (
         <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 text-center">
@@ -44,10 +47,40 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         </div>
       );
     }
-    // Correctly accessing this.props.children
     return this.props.children;
   }
 }
+
+// Componente de Explosão de Corações
+const HeartExplosion: React.FC = () => {
+  const [hearts, setHearts] = useState<{ id: number; left: string; size: string; delay: string }[]>([]);
+
+  useEffect(() => {
+    const newHearts = Array.from({ length: 20 }).map((_, i) => ({
+      id: Date.now() + i,
+      left: `${Math.random() * 100}%`,
+      size: `${Math.random() * 20 + 10}px`,
+      delay: `${Math.random() * 0.5}s`,
+    }));
+    setHearts(newHearts);
+    const timer = setTimeout(() => setHearts([]), 3500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-[999] overflow-hidden">
+      {hearts.map(h => (
+        <div 
+          key={h.id} 
+          className="particle-heart"
+          style={{ left: h.left, fontSize: h.size, animationDelay: h.delay }}
+        >
+          ❤️
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const PixModal: React.FC<{ pixCode: string; onClose: () => void }> = ({ pixCode, onClose }) => {
   const [copied, setCopied] = useState(false);
@@ -58,21 +91,20 @@ const PixModal: React.FC<{ pixCode: string; onClose: () => void }> = ({ pixCode,
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // URL para a API de geração de QR Code
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixCode)}`;
 
   return (
-    <div className="fixed inset-0 z-[300] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-6 animate-in fade-in zoom-in duration-300">
-      <div className="bg-[#0f1525] border-4 border-yellow-400/60 w-full max-w-[340px] rounded-[3rem] p-8 text-center space-y-6 shadow-[0_0_50px_rgba(251,191,36,0.3)] ring-2 ring-yellow-500/20">
-        <div className="space-y-1">
-          <div className="text-4xl mb-2">🏆</div>
+    <div className="fixed inset-0 z-[300] bg-black/98 backdrop-blur-2xl flex items-center justify-center p-6 animate-in fade-in duration-500">
+      <div className="bg-[#0f1525] border-4 border-yellow-400 animate-glow-gold w-full max-w-[340px] rounded-[3.5rem] p-8 text-center space-y-6 shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full animate-shimmer pointer-events-none"></div>
+        <div className="space-y-1 relative z-10">
+          <div className="text-4xl mb-2 animate-bounce">🏆</div>
           <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">ACESSO VITALÍCIO</h2>
           <p className="text-yellow-500 text-[9px] font-black uppercase tracking-[0.3em]">OFERTA LIMITADA VIP</p>
         </div>
 
-        {/* QR Code Section using API Image */}
-        <div className="space-y-4">
-          <div className="bg-white p-4 rounded-3xl inline-block shadow-2xl transform hover:scale-105 transition-transform duration-500 overflow-hidden">
+        <div className="space-y-4 relative z-10">
+          <div className="bg-white p-4 rounded-3xl inline-block shadow-[0_0_20px_rgba(251,191,36,0.3)] transform hover:scale-105 transition-transform duration-500 overflow-hidden">
             <img 
               src={qrCodeUrl} 
               alt="QR Code Pix" 
@@ -85,8 +117,7 @@ const PixModal: React.FC<{ pixCode: string; onClose: () => void }> = ({ pixCode,
           </p>
         </div>
 
-        {/* Textarea Section */}
-        <div className="space-y-4">
+        <div className="space-y-4 relative z-10">
           <div className="relative group">
             <textarea 
               readOnly 
@@ -95,7 +126,7 @@ const PixModal: React.FC<{ pixCode: string; onClose: () => void }> = ({ pixCode,
             />
             <button 
               onClick={copyToClipboard}
-              className={`absolute bottom-2 right-2 px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+              className={`absolute bottom-2 right-2 px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all animate-heartbeat ${
                 copied ? 'bg-green-600 text-white' : 'bg-yellow-500 text-black hover:bg-yellow-400 shadow-lg'
               }`}
             >
@@ -104,7 +135,7 @@ const PixModal: React.FC<{ pixCode: string; onClose: () => void }> = ({ pixCode,
           </div>
         </div>
 
-        <div className="space-y-4 pt-2">
+        <div className="space-y-4 pt-2 relative z-10">
           <div className="flex items-center justify-center space-x-3 text-white font-black">
             <span className="text-xs text-zinc-500 font-normal line-through">R$ 97,00</span>
             <span className="text-3xl bg-clip-text text-transparent bg-gradient-to-r from-yellow-200 via-yellow-500 to-yellow-200 animate-pulse">R$ 0,01</span>
@@ -127,28 +158,171 @@ const TutorialOverlay: React.FC<{
   onClose: () => void; 
   icon: string;
 }> = ({ title, description, onClose, icon }) => (
-  <div className="fixed inset-0 z-[200] bg-black/98 backdrop-blur-3xl flex items-center justify-center p-6 animate-in fade-in zoom-in duration-300">
-    <div className="bg-[#0f1525] border-4 border-yellow-500/30 w-full max-w-[340px] rounded-[3rem] p-8 text-center space-y-6 shadow-[0_0_100px_rgba(255,193,7,0.2)]">
-      <div className="text-7xl drop-shadow-[0_0_30px_rgba(255,193,7,0.5)] animate-bounce">{icon}</div>
-      <div className="space-y-2">
-        <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">COMO JOGAR?</h2>
-        <p className="text-yellow-500 font-black text-lg tracking-widest uppercase">{title}</p>
-        <div className="w-16 h-1 bg-pink-600 mx-auto rounded-full"></div>
+  <div className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
+    <div className="bg-[#121826] border-2 border-yellow-500/30 w-full max-w-[320px] rounded-[3rem] p-8 text-center space-y-6 shadow-2xl relative">
+      <div className="text-6xl mb-2 flex justify-center animate-bounce">{icon}</div>
+      <div className="space-y-1">
+        <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">COMO JOGAR?</h2>
+        <p className="text-yellow-500 font-black text-sm tracking-widest uppercase">{title}</p>
+        <div className="w-12 h-1 bg-pink-600 mx-auto rounded-full mt-2"></div>
       </div>
-      <div className="bg-black/40 p-5 rounded-2xl border border-white/5 max-h-[30vh] overflow-y-auto custom-scrollbar">
-        <div className="text-zinc-200 text-xs leading-relaxed font-bold italic space-y-3 text-left">
-          {description ? description.split('\n').map((line, i) => (
+      <div className="bg-[#0a0f1a] p-5 rounded-2xl border border-white/5">
+        <div className="text-zinc-200 text-[11px] leading-relaxed font-bold italic space-y-3 text-left">
+          {description.split('\n').map((line, i) => (
             <p key={i}>{line}</p>
-          )) : <p>Carregando instruções...</p>}
+          ))}
         </div>
       </div>
-      <div className="flex flex-col space-y-3">
-        <button onClick={onClose} className="w-full bg-green-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-lg shadow-[0_8px_0_rgb(21,128,61)] active:translate-y-1 active:shadow-none transition-all">ENTENDI! ✅</button>
-        <button onClick={onClose} className="text-zinc-600 font-black uppercase text-[9px] tracking-widest">Pular Explicação</button>
+      <div className="flex flex-col space-y-4">
+        <button onClick={onClose} className="w-full bg-green-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-sm shadow-[0_4px_0_rgb(21,128,61)] animate-heartbeat active:translate-y-1 active:shadow-none transition-all">ENTENDI! ✅</button>
+        <button onClick={onClose} className="text-zinc-600 font-black uppercase text-[9px] tracking-widest hover:text-white transition-colors">Pular Explicação</button>
       </div>
     </div>
   </div>
 );
+
+const CardsGame: React.FC<{ 
+  onComplete: (item: any) => void; 
+  spinsRemaining: number; 
+  isVip: boolean; 
+  useSpin: () => boolean; 
+  onCheckout: () => void; 
+ }> = ({ onComplete, spinsRemaining, isVip, useSpin, onCheckout }) => {
+  const [revealed, setRevealed] = useState<number[]>([]);
+
+  const handleFlip = (index: number) => {
+    if (revealed.includes(index)) return;
+    if (!useSpin()) return;
+
+    setRevealed(prev => [...prev, index]);
+    const challenge = cardChallenges[Math.floor(Math.random() * cardChallenges.length)];
+    onComplete({
+      id: `card-${Date.now()}-${index}`,
+      nome: `CARD REVELADO`,
+      descricao: challenge,
+      timer: 30
+    });
+  };
+
+  const hasNoSpins = !isVip && spinsRemaining <= 0;
+
+  if (hasNoSpins) {
+    return (
+      <div className="bg-[#0f1525] border border-red-500/30 p-8 rounded-[3rem] text-center space-y-4 animate-in zoom-in shadow-2xl">
+        <p className="text-white text-xs font-black uppercase italic">Giros de cartas esgotados!</p>
+        <button onClick={onCheckout} className="w-full py-5 bg-yellow-500 text-black rounded-2xl font-black uppercase tracking-widest text-[11px] animate-heartbeat shadow-lg">LIBERAR TUDO AGORA 🚀</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-12 animate-in slide-in-from-bottom duration-700">
+      <div className="bg-[#0f1525] border border-zinc-900 p-5 rounded-[2.5rem] space-y-3 shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full animate-shimmer opacity-10 pointer-events-none"></div>
+        <div className="flex justify-between items-center px-2">
+          <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">CONEXÃO</span>
+          <span className="text-[11px] font-black text-yellow-500 animate-pulse">{revealed.length % 6} / 5</span>
+        </div>
+        <div className="h-1.5 bg-black rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400 transition-all duration-1000 shadow-[0_0_10px_rgba(251,191,36,0.5)]"
+            style={{ width: `${((revealed.length % 6) / 5) * 100}%` }}
+          ></div>
+        </div>
+      </div>
+
+      <h2 className="text-center text-4xl font-black text-white italic uppercase tracking-tighter leading-none drop-shadow-[0_4px_10px_rgba(0,0,0,1)]">CARDS DA<br/>SORTE</h2>
+
+      <div className="grid grid-cols-3 gap-5 pb-12 px-2">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <button
+            key={i}
+            onClick={() => handleFlip(i)}
+            disabled={revealed.includes(i)}
+            className={`aspect-[3/4] rounded-2xl border-2 transition-all duration-500 flex items-center justify-center shadow-2xl transform active:scale-90 ${
+              revealed.includes(i) 
+                ? 'bg-zinc-900 border-zinc-800 opacity-20 scale-90' 
+                : 'bg-[#0f1525] border-zinc-900 hover:border-yellow-500/30'
+            }`}
+          >
+            <span className={`text-4xl transition-all duration-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.7)] ${revealed.includes(i) ? 'grayscale opacity-10' : 'animate-heartbeat'}`}>
+              ❤️
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const SlotGame: React.FC<{ 
+  onComplete: (item: any) => void; 
+  spinsRemaining: number; 
+  isVip: boolean; 
+  useSpin: () => boolean; 
+  onCheckout: () => void; 
+}> = ({ onComplete, spinsRemaining, isVip, useSpin, onCheckout }) => {
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [result, setResult] = useState<[string, string, string] | null>(null);
+
+  const spin = () => {
+    if (isSpinning) return;
+    if (!useSpin()) return;
+
+    setIsSpinning(true);
+    setResult(null);
+
+    setTimeout(() => {
+      const action = slotActions[Math.floor(Math.random() * slotActions.length)];
+      const target = slotTargets[Math.floor(Math.random() * slotTargets.length)];
+      const intensity = slotIntensities[Math.floor(Math.random() * slotIntensities.length)];
+      
+      setResult([action, target, intensity]);
+      setIsSpinning(false);
+      
+      onComplete({
+        id: `slot-${Date.now()}`,
+        nome: "COMBO PROIBIDO",
+        descricao: `${action} ${target} ${intensity}`,
+        timer: 30
+      });
+    }, 2000);
+  };
+
+  const hasNoSpins = !isVip && spinsRemaining <= 0;
+
+  if (hasNoSpins) {
+    return (
+      <div className="bg-[#0f1525] border border-red-500/30 p-8 rounded-[3rem] text-center space-y-4 animate-in zoom-in shadow-2xl">
+        <p className="text-white text-xs font-black uppercase italic">Giros de slot esgotados!</p>
+        <button onClick={onCheckout} className="w-full py-5 bg-yellow-500 text-black rounded-2xl font-black uppercase tracking-widest text-[11px] animate-heartbeat shadow-lg">LIBERAR TUDO AGORA 🚀</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-[#0f1525] p-8 rounded-[3.5rem] border-2 border-zinc-900 shadow-2xl space-y-10 animate-in zoom-in py-10 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-full animate-shimmer opacity-5 pointer-events-none"></div>
+      <div className="flex justify-between gap-3 h-40">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="flex-1 bg-black rounded-2xl border-2 border-zinc-800 flex items-center justify-center overflow-hidden relative shadow-inner">
+            <div className={`text-[11px] font-black text-center px-1 uppercase italic transition-all duration-300 ${isSpinning ? 'animate-bounce opacity-40' : 'text-yellow-500'}`}>
+              {result ? result[i] : '---'}
+            </div>
+            {isSpinning && <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black opacity-80 animate-pulse"></div>}
+          </div>
+        ))}
+      </div>
+      <button 
+        onClick={spin} 
+        disabled={isSpinning}
+        className="w-full py-6 bg-gradient-to-br from-pink-600 to-pink-500 text-white rounded-[2rem] font-black uppercase tracking-widest shadow-[0_6px_0_rgb(157,23,77)] animate-heartbeat active:translate-y-1 active:shadow-none transition-all disabled:opacity-50"
+      >
+        {isSpinning ? 'SORTEANDO...' : 'PUXAR ALAVANCA ⚡'}
+      </button>
+    </div>
+  );
+};
 
 const Onboarding: React.FC<{ onComplete: (n: string, p: string) => void }> = ({ onComplete }) => {
   const [step, setStep] = useState(0);
@@ -159,16 +333,16 @@ const Onboarding: React.FC<{ onComplete: (n: string, p: string) => void }> = ({ 
     return (
       <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 text-center overflow-hidden z-[300]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a2333_0%,_#000000_100%)] opacity-50"></div>
-        <div className="relative z-10 space-y-12 animate-in fade-in duration-1000 max-w-sm">
-          <div className="w-48 h-48 border-[10px] border-yellow-600/50 rounded-full flex flex-col items-center justify-center mx-auto bg-black/60 shadow-[0_0_60px_rgba(202,138,4,0.3)] animate-pulse">
-            <span className="text-6xl font-black text-white">18+</span>
+        <div className="relative z-10 space-y-12 animate-in fade-in duration-1000 max-w-sm w-full">
+          <div className="w-40 h-40 border-[8px] border-yellow-600/50 rounded-full flex flex-col items-center justify-center mx-auto bg-black/60 shadow-[0_0_80px_rgba(202,138,4,0.4)] animate-pulse">
+            <span className="text-5xl font-black text-white">18+</span>
             <span className="text-[10px] font-black text-yellow-600 uppercase tracking-[0.3em] mt-2 text-center">ACESSO<br/>RESTRITO</span>
           </div>
           <div className="space-y-4">
-            <h1 className="text-6xl font-black text-white italic tracking-tighter uppercase leading-none">LUNA<br/><span className="text-yellow-500">SUTRA</span></h1>
-            <p className="text-zinc-400 font-bold uppercase tracking-[0.3em] text-[10px]">O CLIMAX DO SEU RELACIONAMENTO</p>
+            <h1 className="text-6xl font-black text-white italic tracking-tighter uppercase leading-none drop-shadow-2xl">LUNA<br/><span className="text-yellow-500">SUTRA</span></h1>
+            <p className="text-zinc-400 font-bold uppercase tracking-[0.3em] text-[10px] animate-pulse">O CLIMAX DO SEU RELACIONAMENTO</p>
           </div>
-          <button onClick={() => setStep(1)} className="w-full bg-yellow-500 text-black py-6 rounded-[2rem] text-xl font-black uppercase tracking-[0.2em] shadow-[0_10px_30px_rgba(255,255,255,0.05)] active:scale-95 transition-all">SOU MAIOR DE IDADE</button>
+          <button onClick={() => setStep(1)} className="w-full bg-yellow-500 text-black py-6 rounded-[2.5rem] text-xl font-black uppercase tracking-[0.2em] shadow-xl animate-heartbeat active:scale-95 transition-all">SOU MAIOR DE IDADE</button>
         </div>
       </div>
     );
@@ -176,107 +350,23 @@ const Onboarding: React.FC<{ onComplete: (n: string, p: string) => void }> = ({ 
 
   return (
     <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 animate-in slide-in-from-right duration-500 z-[300]">
-      <div className="w-full max-w-sm space-y-12">
+      <div className="w-full max-w-[320px] space-y-12">
         <div className="text-center space-y-3">
           <h2 className="text-4xl font-black text-yellow-500 italic uppercase leading-none tracking-tighter">PERFIL VIP</h2>
           <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.4em]">QUEM VAI EXPLORAR O LUNA?</p>
         </div>
         <div className="space-y-8">
-          <div className="relative">
-            <input value={userName} onChange={e => setUserName(e.target.value)} className="w-full bg-[#0f1525] border-4 border-zinc-900 p-6 rounded-[2rem] text-white outline-none focus:border-yellow-500 transition-all text-xl font-black uppercase italic" placeholder="SEU NOME" />
-            <span className="absolute -top-3 left-6 bg-black px-2 text-zinc-600 text-[9px] font-black uppercase tracking-widest">JOGADOR 1</span>
+          <div className="relative group">
+            <input value={userName} onChange={e => setUserName(e.target.value)} className="w-full bg-[#0f1525] border-2 border-zinc-900 p-6 rounded-3xl text-white outline-none focus:border-yellow-500 transition-all text-xl font-black uppercase italic" placeholder="SEU NOME" />
+            <span className="absolute -top-3 left-6 bg-black px-2 text-zinc-600 text-[10px] font-black uppercase tracking-widest group-focus-within:text-yellow-500">JOGADOR 1</span>
           </div>
-          <div className="relative">
-            <input value={partnerName} onChange={e => setPartnerName(e.target.value)} className="w-full bg-[#0f1525] border-4 border-zinc-900 p-6 rounded-[2rem] text-white outline-none focus:border-yellow-500 transition-all text-xl font-black uppercase italic" placeholder="NOME DO PAR" />
-            <span className="absolute -top-3 left-6 bg-black px-2 text-zinc-600 text-[9px] font-black uppercase tracking-widest">JOGADOR 2</span>
+          <div className="relative group">
+            <input value={partnerName} onChange={e => setPartnerName(e.target.value)} className="w-full bg-[#0f1525] border-2 border-zinc-900 p-6 rounded-3xl text-white outline-none focus:border-yellow-500 transition-all text-xl font-black uppercase italic" placeholder="NOME DO PAR" />
+            <span className="absolute -top-3 left-6 bg-black px-2 text-zinc-600 text-[10px] font-black uppercase tracking-widest group-focus-within:text-yellow-500">JOGADOR 2</span>
           </div>
         </div>
-        <button disabled={!userName || !partnerName} onClick={() => onComplete(userName, partnerName)} className="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 disabled:opacity-20 py-6 rounded-[2rem] text-xl font-black uppercase text-black shadow-xl transform active:scale-95">COMEÇAR AGORA 🔒</button>
+        <button disabled={!userName || !partnerName} onClick={() => onComplete(userName, partnerName)} className="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 disabled:opacity-20 py-6 rounded-[2.5rem] text-xl font-black uppercase text-black shadow-2xl animate-shimmer active:scale-95 transition-all">COMEÇAR AGORA 🔒</button>
       </div>
-    </div>
-  );
-};
-
-const CardsGame = ({ onComplete, spinsRemaining, isVip, useSpin, onCheckout }: { onComplete: (item: any) => void, spinsRemaining: number, isVip: boolean, useSpin: () => boolean, onCheckout: () => void }) => {
-  const [flipped, setFlipped] = useState<number[]>([]);
-  
-  if (!isVip && spinsRemaining <= 0) return (
-    <div className="px-6 py-8 bg-[#0f1525] rounded-[3rem] border-4 border-red-500/30 text-center space-y-6 mx-4 animate-in zoom-in">
-      <div className="text-5xl">🔒</div>
-      <h3 className="text-2xl font-black text-white uppercase italic">Limite Atingido!</h3>
-      <p className="text-zinc-400 text-xs font-bold leading-relaxed">Libere acesso TOTAL e VITALÍCIO agora por apenas R$ 0,01.</p>
-      <button onClick={onCheckout} className="w-full py-5 bg-yellow-500 text-black rounded-2xl font-black uppercase tracking-widest text-sm">LIBERAR ACESSO VITALÍCIO 🚀</button>
-    </div>
-  );
-
-  return (
-    <div className="px-6 py-8 space-y-10 animate-in slide-in-from-bottom duration-500 text-center">
-      <div className="space-y-2">
-        <h2 className="text-5xl font-black italic text-white uppercase tracking-tighter leading-none">CARDS DA<br/>SORTE</h2>
-        <p className="text-[10px] font-black text-pink-500 uppercase tracking-widest">{isVip ? 'Giros Ilimitados VIP' : `Giros Restantes: ${spinsRemaining}`}</p>
-      </div>
-      <div className="grid grid-cols-3 gap-4 max-w-sm mx-auto">
-        {Array.from({ length: 12 }).map((_, i) => (
-          <div 
-            key={i} 
-            onClick={() => {
-              if(!flipped.includes(i) && useSpin()) {
-                setFlipped([...flipped, i]);
-                const challenge = cardChallenges[Math.floor(Math.random() * cardChallenges.length)];
-                onComplete({ nome: "CARD REVELADO", descricao: challenge, categoria: 'Cards', id: `card-${i}-${Date.now()}` });
-              }
-            }}
-            className="aspect-[3/4] bg-[#0f1525] border-2 border-zinc-900 rounded-2xl flex items-center justify-center cursor-pointer active:scale-90 transition-all group overflow-hidden shadow-lg"
-          >
-            {flipped.includes(i) ? <span className="text-3xl">🔥</span> : <span className="text-yellow-500 text-4xl">❤️</span>}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const SlotGame = ({ onComplete, spinsRemaining, isVip, useSpin, onCheckout }: { onComplete: (item: any) => void, spinsRemaining: number, isVip: boolean, useSpin: () => boolean, onCheckout: () => void }) => {
-  const [spinning, setSpinning] = useState(false);
-  const [cols, setCols] = useState(["🔥", "🔞", "😈"]);
-
-  if (!isVip && spinsRemaining <= 0) return (
-    <div className="px-6 py-8 bg-[#0f1525] rounded-[3rem] border-4 border-red-500/30 text-center space-y-6 mx-4 animate-in zoom-in">
-      <div className="text-5xl">🔒</div>
-      <h3 className="text-2xl font-black text-white uppercase italic">Limite Atingido!</h3>
-      <button onClick={onCheckout} className="w-full py-5 bg-yellow-500 text-black rounded-2xl font-black uppercase tracking-widest text-sm">LIBERAR ACESSO VITALÍCIO 🚀</button>
-    </div>
-  );
-
-  const spin = () => {
-    if (spinning || !useSpin()) return;
-    setSpinning(true);
-    const interval = setInterval(() => {
-      setCols([slotActions[Math.floor(Math.random() * slotActions.length)], slotTargets[Math.floor(Math.random() * slotTargets.length)], slotIntensities[Math.floor(Math.random() * slotIntensities.length)]]);
-    }, 100);
-    setTimeout(() => {
-      clearInterval(interval);
-      setSpinning(false);
-      const a = slotActions[Math.floor(Math.random() * slotActions.length)];
-      const t = slotTargets[Math.floor(Math.random() * slotTargets.length)];
-      const i = slotIntensities[Math.floor(Math.random() * slotIntensities.length)];
-      setCols([a, t, i]);
-      onComplete({ id: 'slot-res-' + Date.now(), nome: "COMBINAÇÃO PROIBIDA", descricao: `${a} ${t} ${i}!`, categoria: 'Slot' });
-    }, 2000);
-  };
-
-  return (
-    <div className="px-6 py-8 space-y-12 text-center animate-in zoom-in duration-700">
-      <div className="space-y-2">
-        <h2 className="text-6xl font-black text-white italic uppercase tracking-tighter leading-none">SLOT<br/>PROIBIDO</h2>
-        <p className="text-[10px] font-black text-yellow-500 uppercase tracking-widest">{isVip ? 'Giros Ilimitados VIP' : `Giros Restantes: ${spinsRemaining}`}</p>
-      </div>
-      <div className="bg-[#0f1525] p-6 rounded-[3rem] border-8 border-zinc-950 flex space-x-3 max-w-sm mx-auto shadow-2xl">
-         {cols.map((val, i) => (
-           <div key={i} className="flex-1 aspect-[1/2] bg-zinc-950 rounded-2xl border-2 border-zinc-900 flex items-center justify-center p-2 text-center text-xs font-black text-yellow-500 italic uppercase leading-tight">{val}</div>
-         ))}
-      </div>
-      <button onClick={spin} disabled={spinning} className="px-12 py-6 bg-gradient-to-r from-yellow-600 to-yellow-500 rounded-[2rem] font-black text-2xl uppercase tracking-widest text-black shadow-xl disabled:opacity-50 active:scale-95 transition-all">⚡ PUXAR</button>
     </div>
   );
 };
@@ -289,6 +379,8 @@ export default function App() {
   const [missionTimer, setMissionTimer] = useState<number | null>(null);
   const [isGeneratingPix, setIsGeneratingPix] = useState(false);
   const [pixCode, setPixCode] = useState<string | null>(null);
+  const [showHearts, setShowHearts] = useState(false);
+  const [lastCoins, setLastCoins] = useState(state.coins);
 
   useEffect(() => {
     let interval: any;
@@ -299,6 +391,15 @@ export default function App() {
     }
     return () => clearInterval(interval);
   }, [missionTimer]);
+
+  // Feedback visual ao ganhar moedas
+  useEffect(() => {
+    if (state.coins > lastCoins) {
+      setShowHearts(true);
+      setTimeout(() => setShowHearts(false), 3000);
+    }
+    setLastCoins(state.coins);
+  }, [state.coins]);
 
   const handleCreatePix = async () => {
     setIsGeneratingPix(true);
@@ -321,85 +422,149 @@ export default function App() {
   if (!state.isOnboarded) return <ErrorBoundary><Onboarding onComplete={updateProfile} /></ErrorBoundary>;
 
   const tutorialContent = {
-    girar: { title: "ROLETA LUNA", icon: "🎰", description: "1. Escolha a intensidade.\n2. Clique em GIRAR.\n3. Realize a missão por 35 segundos.\n4. Ganhe 20 moedas!" },
-    cards: { title: "CARDS DA SORTE", icon: "🎴", description: "Revele cards e ganhe 10 moedas!" },
-    slot: { title: "SLOT PROIBIDO", icon: "⚡", description: "Puxe a alavanca para combinações picantes!" }
+    girar: { 
+      title: "ROLETA LUNA", 
+      icon: "🎰", 
+      description: "1. Escolha a intensidade: Aquecimento, Ousadia ou Posição.\n2. Clique em GIRAR para sortear um desafio.\n3. Após o sorteio, clique em INICIAR AGORA.\n4. Realize a missão por 35 segundos.\n5. Somente após o tempo zerar, você poderá clicar em CONCLUÍDO e ganhar 20 moedas!" 
+    },
+    dice: {
+      title: "DADO DA SURPRESA",
+      icon: "🎲",
+      description: "1. Um parceiro escreve um desejo oculto e um número de 1 a 6.\n2. O outro parceiro tenta adivinhar o número secreto.\n3. Se você acertar o número secreto do seu par, o desejo é revelado para ser cumprido na hora!"
+    },
+    cards: { 
+      title: "CARDS DA SORTE", 
+      icon: "🎴", 
+      description: "1. Toque em qualquer card para revelar uma missão.\n2. Clique em INICIAR AGORA e realize a ação por 30 segundos.\n3. Ao completar o tempo, clique em CONCLUÍDO para ganhar 10 moedas!" 
+    },
+    slot: { 
+      title: "SLOT PROIBIDO", 
+      icon: "⚡", 
+      description: "1. Puxe a alavanca para girar combinações eróticas.\n2. Clique em INICIAR AGORA e realize a ação por 30 segundos.\n3. Ganhe 10 moedas por cada rodada de sucesso!" 
+    }
   };
 
   const closeMission = () => { setActiveMission(null); setMissionTimer(null); };
 
   return (
     <ErrorBoundary>
-      <div className="h-full w-full flex flex-col bg-black text-white overflow-hidden relative">
+      <div className="h-full w-full flex flex-col bg-black text-white overflow-hidden relative transition-all duration-700">
         
+        {showHearts && <HeartExplosion />}
         {pixCode && <PixModal pixCode={pixCode} onClose={() => setPixCode(null)} />}
         
         {isGeneratingPix && (
-          <div className="fixed inset-0 z-[400] bg-black/80 flex flex-col items-center justify-center space-y-4">
-            <div className="w-12 h-12 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-yellow-500 font-black uppercase tracking-widest text-xs">Gerando Pix Seguro...</p>
+          <div className="fixed inset-0 z-[400] bg-black/90 flex flex-col items-center justify-center space-y-6 backdrop-blur-md">
+            <div className="relative">
+              <div className="w-16 h-16 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
+              <div className="absolute inset-0 flex items-center justify-center text-xl animate-pulse">🔒</div>
+            </div>
+            <p className="text-yellow-500 font-black uppercase tracking-widest text-[11px]">Criptografando Pagamento VIP...</p>
           </div>
         )}
 
         {activeTab === 'girar' && !state.tutorialsCompleted.includes('girar') && (
           <TutorialOverlay {...tutorialContent.girar} onClose={() => completeTutorial('girar')} />
         )}
+        {activeTab === 'girar' && state.tutorialsCompleted.includes('girar') && !state.tutorialsCompleted.includes('dice') && (
+          <TutorialOverlay {...tutorialContent.dice} onClose={() => completeTutorial('dice')} />
+        )}
+        {activeTab === 'cards' && !state.tutorialsCompleted.includes('cards') && (
+          <TutorialOverlay {...tutorialContent.cards} onClose={() => completeTutorial('cards')} />
+        )}
+        {activeTab === 'slot' && !state.tutorialsCompleted.includes('slot') && (
+          <TutorialOverlay {...tutorialContent.slot} onClose={() => completeTutorial('slot')} />
+        )}
 
-        <header className="px-8 pt-10 pb-4 flex-shrink-0 z-10 bg-black/50 backdrop-blur-sm">
+        <header className="px-6 pt-12 pb-6 flex-shrink-0 z-10 bg-black/60 backdrop-blur-xl border-b border-white/5">
           <div className="flex justify-between items-start">
             <div className="space-y-1">
-               <h1 className="text-[10px] font-black tracking-[0.4em] text-yellow-500 uppercase opacity-60">LUNA CLUB</h1>
-               <p className="text-2xl font-black italic tracking-tighter uppercase leading-none">{state.userName} <span className="text-yellow-500">&</span> {state.partnerName}</p>
+               <h1 className="text-[10px] font-black tracking-[0.5em] text-yellow-500 uppercase opacity-60 leading-none">LUNA CLUB</h1>
+               <p className="text-2xl font-black italic tracking-tighter uppercase leading-none drop-shadow-lg">{state.userName} <span className="text-yellow-500">&</span> {state.partnerName}</p>
             </div>
             <div className="flex flex-col items-end space-y-2">
-              <div className="bg-[#0f1525] px-4 py-2 rounded-2xl border-2 border-zinc-950 flex items-center space-x-2 shadow-lg">
+              <div className={`bg-[#0f1525] px-4 py-2 rounded-2xl border border-zinc-800 flex items-center space-x-2 shadow-2xl transition-all ${showHearts ? 'animate-coin-pop' : ''}`}>
                 <span className="text-xl font-black text-yellow-500">{state.coins}</span>
-                <span className="text-base animate-pulse">🪙</span>
+                <span className="text-lg animate-pulse">🪙</span>
               </div>
-              {state.isVip && <span className="text-[8px] font-black bg-yellow-500 text-black px-3 py-1 rounded-full uppercase tracking-widest animate-pulse">VIP ATIVO</span>}
+              {state.isVip && <span className="text-[8px] font-black bg-yellow-500 text-black px-3 py-1 rounded-full uppercase tracking-widest animate-shimmer shadow-[0_0_15px_rgba(251,191,36,0.4)]">VIP ATIVO</span>}
             </div>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar touch-pan-y relative px-4 pb-40">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar touch-pan-y relative px-4 pb-36 animate-in fade-in duration-1000">
           {activeTab === 'girar' && (
-            <div className="py-6 space-y-8 flex flex-col items-center max-w-sm mx-auto">
-               <div className="w-full flex bg-[#0f1525] p-2 rounded-[2rem] border-2 border-zinc-950 shadow-xl">
+            <div className="py-4 space-y-8 flex flex-col items-center max-w-[360px] mx-auto">
+               <div className="w-full flex bg-[#0f1525] p-2 rounded-[2rem] border-2 border-zinc-900 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-full animate-shimmer opacity-5 pointer-events-none"></div>
                 {Object.values(Category).map(cat => (
-                  <button key={cat} onClick={() => setCategory(cat)} className={`flex-1 py-3 rounded-2xl text-[9px] font-black uppercase tracking-[0.1em] transition-all ${category === cat ? 'bg-yellow-500 text-black shadow-md' : 'text-zinc-600'}`}>{cat}</button>
+                  <button key={cat} onClick={() => setCategory(cat)} className={`flex-1 py-3.5 rounded-2xl text-[9px] font-black uppercase tracking-[0.1em] transition-all relative z-10 ${category === cat ? 'bg-yellow-500 text-black shadow-[0_4px_15px_rgba(251,191,36,0.3)] scale-105' : 'text-zinc-600 hover:text-white/60'}`}>{cat}</button>
                 ))}
               </div>
+              
               <Wheel 
                 category={category} 
                 history={state.history} 
-                onComplete={(item) => addCompletion(item.id)} 
+                onComplete={(item) => setActiveMission({...item, reward: 20, timer: 35})} 
                 spinsRemaining={state.spins.wheel} 
                 isVip={state.isVip} 
                 onSpinUsed={() => useSpin('wheel')} 
                 onCheckout={handleCreatePix} 
               />
+
+              <DiceGame 
+                spinsRemaining={state.spins.dice}
+                isVip={state.isVip}
+                useSpin={() => useSpin('dice')}
+                onCheckout={handleCreatePix}
+                onComplete={(reward) => addCompletion('dice-turn-' + Date.now(), reward)}
+              />
             </div>
           )}
 
-          {activeTab === 'cards' && <CardsGame onComplete={(item) => setActiveMission({...item, reward: 10})} spinsRemaining={state.spins.cards} isVip={state.isVip} useSpin={() => useSpin('cards')} onCheckout={handleCreatePix} />}
-          {activeTab === 'slot' && <SlotGame onComplete={(item) => setActiveMission({...item, reward: 10})} spinsRemaining={state.spins.slots} isVip={state.isVip} useSpin={() => useSpin('slots')} onCheckout={handleCreatePix} />}
-          {activeTab === 'loja' && <Store state={state} onUnlock={unlockGame} />}
+          {activeTab === 'cards' && (
+            <div className="max-w-[360px] mx-auto py-4">
+              <CardsGame 
+                onComplete={(item) => setActiveMission({...item, reward: 10, timer: 30})} 
+                spinsRemaining={state.spins.cards} 
+                isVip={state.isVip} 
+                useSpin={() => useSpin('cards')} 
+                onCheckout={handleCreatePix} 
+              />
+            </div>
+          )}
+
+          {activeTab === 'slot' && (
+            <div className="max-w-[360px] mx-auto py-4">
+              <SlotGame 
+                onComplete={(item) => setActiveMission({...item, reward: 10, timer: 30})} 
+                spinsRemaining={state.spins.slots} 
+                isVip={state.isVip} 
+                useSpin={() => useSpin('slots')} 
+                onCheckout={handleCreatePix} 
+              />
+            </div>
+          )}
+
+          {activeTab === 'loja' && <div className="max-w-[360px] mx-auto"><Store state={state} onUnlock={unlockGame} /></div>}
+
           {activeTab === 'vip' && (
-            <div className="px-4 py-12 space-y-12 text-center animate-in slide-in-from-bottom max-w-sm mx-auto">
-               <div className="text-8xl mb-6">🏆</div>
-               <h2 className="text-4xl font-black text-yellow-500 uppercase italic tracking-tighter leading-none">Área VIP Luna</h2>
-               <div className="bg-[#0f1525] p-10 rounded-[3rem] border-4 border-yellow-500/20 space-y-8 shadow-2xl">
+            <div className="px-4 py-12 space-y-10 text-center animate-in slide-in-from-bottom max-w-[320px] mx-auto">
+               <div className="text-8xl mb-4 animate-bounce filter drop-shadow-[0_10px_30px_rgba(251,191,36,0.4)]">🏆</div>
+               <h2 className="text-4xl font-black text-yellow-500 uppercase italic tracking-tighter leading-none drop-shadow-2xl">Área VIP Luna</h2>
+               <div className="bg-[#0f1525] p-10 rounded-[3.5rem] border-4 border-yellow-500/40 space-y-8 shadow-[0_0_50px_rgba(251,191,36,0.1)] relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-full animate-shimmer pointer-events-none"></div>
                   <div className="space-y-2">
-                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">OFERTA PIX VITALÍCIA</span>
-                    <div className="text-white text-5xl font-black">R$ 0,01</div>
+                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.4em]">OFERTA PIX VITALÍCIA</span>
+                    <div className="text-white text-5xl font-black animate-pulse">R$ 0,01</div>
                   </div>
-                  <button onClick={handleCreatePix} className="w-full py-6 bg-yellow-500 text-black rounded-2xl font-black uppercase tracking-widest text-xl shadow-[0_8px_0_rgb(161,98,7)] active:scale-95 active:shadow-none transition-all">LIBERAR AGORA 🔒</button>
+                  <button onClick={handleCreatePix} className="w-full py-6 bg-yellow-500 text-black rounded-3xl font-black uppercase tracking-widest text-xl shadow-[0_8px_0_rgb(161,98,7)] animate-heartbeat active:translate-y-1 active:shadow-none transition-all">LIBERAR AGORA 🔒</button>
                </div>
             </div>
           )}
         </main>
 
-        <nav className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-xl border-t-4 border-zinc-950 px-6 py-6 flex justify-around items-center z-50 rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.8)] pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+        <nav className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-2xl border-t border-white/5 px-6 py-6 flex justify-around items-center z-50 rounded-t-[3.5rem] shadow-[0_-20px_60px_rgba(0,0,0,1)] pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
           {[
             { id: 'girar', label: 'LUNA', icon: '🎰' },
             { id: 'cards', label: 'CARDS', icon: '🎴' },
@@ -407,28 +572,29 @@ export default function App() {
             { id: 'loja', label: 'LOJA', icon: '👜' },
             { id: 'vip', label: 'VIP', icon: '🏆' }
           ].map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id as any)} className="flex flex-col items-center space-y-2 relative outline-none">
-              <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl transition-all ${activeTab === item.id ? 'bg-yellow-500 text-black shadow-lg -translate-y-3' : 'text-zinc-600'}`}>{item.icon}</div>
+            <button key={item.id} onClick={() => setActiveTab(item.id as any)} className="flex flex-col items-center space-y-2 relative outline-none flex-1">
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl transition-all duration-500 ${activeTab === item.id ? 'bg-yellow-500 text-black shadow-[0_0_30px_rgba(251,191,36,0.5)] -translate-y-4 scale-125' : 'text-zinc-600 hover:text-zinc-400'}`}>{item.icon}</div>
               <span className={`text-[8px] font-black tracking-widest transition-all ${activeTab === item.id ? 'text-yellow-500 opacity-100' : 'opacity-30'}`}>{item.label}</span>
             </button>
           ))}
         </nav>
 
         {activeMission && (
-          <div className="fixed inset-0 z-[250] bg-black/98 backdrop-blur-3xl flex items-center justify-center p-6 animate-in fade-in duration-300">
-             <div className="bg-[#0f1525] border-6 border-yellow-500/20 w-full max-w-[340px] rounded-[3rem] overflow-hidden shadow-2xl text-center p-10 space-y-8">
-                <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter leading-tight">{activeMission.nome}</h2>
-                <div className="p-6 bg-black/80 rounded-[2rem] border-2 border-zinc-900">
-                  <p className="text-2xl text-white font-black leading-tight italic">"{activeMission.descricao}"</p>
+          <div className="fixed inset-0 z-[250] bg-black/98 backdrop-blur-3xl flex items-center justify-center p-6 animate-in fade-in duration-500">
+             <div className="bg-[#0f1525] border-4 border-yellow-500/20 w-full max-w-[320px] rounded-[3.5rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,1)] text-center p-10 space-y-8 relative">
+                <div className="absolute top-0 left-0 w-full h-full animate-shimmer opacity-5 pointer-events-none"></div>
+                <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter leading-tight relative z-10">{activeMission.nome}</h2>
+                <div className="p-6 bg-black/60 rounded-[2.5rem] border border-zinc-900 relative z-10 shadow-inner">
+                  <p className="text-xl text-white font-black leading-tight italic">"{activeMission.descricao}"</p>
                 </div>
                 {missionTimer !== null && (
-                  <div className="text-6xl font-black text-yellow-500 font-mono">00:{missionTimer < 10 ? `0${missionTimer}` : missionTimer}</div>
+                  <div className="text-6xl font-black text-yellow-500 font-mono tracking-tighter animate-pulse relative z-10">00:{missionTimer < 10 ? `0${missionTimer}` : missionTimer}</div>
                 )}
-                <div className="flex flex-col space-y-4">
-                  <button onClick={() => { if (missionTimer === null) setMissionTimer(30); else { addCompletion(activeMission.id, activeMission.reward); closeMission(); } }} disabled={missionTimer !== null && missionTimer > 0} className="w-full py-6 font-black rounded-2xl uppercase tracking-widest text-xl bg-yellow-500 text-black shadow-xl active:scale-95 transition-all disabled:opacity-50">
-                    {missionTimer === null ? 'COMEÇAR AGORA ⏳' : missionTimer === 0 ? `CONCLUÍDO! (+${activeMission.reward})` : 'AGUARDE...'}
+                <div className="flex flex-col space-y-4 relative z-10">
+                  <button onClick={() => { if (missionTimer === null) setMissionTimer(activeMission.timer || 30); else { addCompletion(activeMission.id, activeMission.reward); closeMission(); } }} disabled={missionTimer !== null && missionTimer > 0} className="w-full py-6 font-black rounded-3xl uppercase tracking-widest text-xl bg-yellow-500 text-black shadow-[0_8px_0_rgb(161,98,7)] animate-heartbeat active:translate-y-1 active:shadow-none transition-all disabled:opacity-50">
+                    {missionTimer === null ? 'INICIAR AGORA ⏳' : missionTimer === 0 ? `CONCLUÍDO! (+${activeMission.reward})` : 'AGUARDE...'}
                   </button>
-                  <button onClick={closeMission} disabled={missionTimer !== null && missionTimer > 0} className="text-zinc-600 font-black uppercase text-[9px] tracking-[0.3em]">✕ FECHAR</button>
+                  <button onClick={closeMission} disabled={missionTimer !== null && missionTimer > 0} className="text-zinc-600 font-black uppercase text-[10px] tracking-[0.3em] hover:text-white transition-colors">✕ FECHAR</button>
                 </div>
              </div>
           </div>

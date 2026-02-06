@@ -16,9 +16,6 @@ interface WheelProps {
 export const Wheel: React.FC<WheelProps> = ({ category, onComplete, history, spinsRemaining, isVip, onSpinUsed, onCheckout }) => {
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
-  const [selectedItem, setSelectedItem] = useState<any>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [timer, setTimer] = useState<number | null>(null);
   const [slices, setSlices] = useState<GameItem[]>([]);
 
   useEffect(() => {
@@ -39,8 +36,6 @@ export const Wheel: React.FC<WheelProps> = ({ category, onComplete, history, spi
     if (!onSpinUsed()) return;
 
     setIsSpinning(true);
-    setShowModal(false);
-    setTimer(null);
 
     const extraSpins = 12 + Math.random() * 8;
     const finalRotation = rotation + (extraSpins * 360) + (Math.random() * 360);
@@ -51,35 +46,25 @@ export const Wheel: React.FC<WheelProps> = ({ category, onComplete, history, spi
       const normalizedRotation = (finalRotation % 360);
       const sliceIndex = Math.floor(((360 - normalizedRotation + 15) % 360) / 30);
       const winner = slices[sliceIndex % 12];
-      setSelectedItem(winner);
-      setShowModal(true);
+      onComplete(winner);
     }, 4500);
-  };
-
-  const startTimer = () => {
-    setTimer(35);
-    const intervalId = setInterval(() => {
-      setTimer(prev => {
-        if (prev === 1) {
-          clearInterval(intervalId);
-          return 0;
-        }
-        return prev ? prev - 1 : 0;
-      });
-    }, 1000);
   };
 
   const hasNoSpins = !isVip && spinsRemaining <= 0;
 
   return (
-    <div className="flex flex-col items-center w-full max-w-[400px] mx-auto py-2">
-      <div className="relative w-[70vw] h-[70vw] max-w-[300px] max-h-[300px] mb-8 perspective-2000 pointer-events-none sm:pointer-events-auto">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6 z-20 w-10 h-14 bg-white rounded-b-2xl shadow-lg border-2 border-zinc-900 flex items-end justify-center pb-3">
+    <div className="flex flex-col items-center w-full max-w-[340px] mx-auto py-2">
+      <div className="relative w-[70vw] h-[70vw] max-w-[260px] max-h-[260px] mb-8 perspective-2000">
+        {/* Ponteiro Luna com Glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6 z-20 w-10 h-12 bg-white rounded-b-2xl shadow-[0_0_25px_rgba(255,255,255,0.4)] border-2 border-zinc-950 flex items-end justify-center pb-3">
            <div className="w-4 h-4 bg-pink-600 rounded-full animate-pulse shadow-[0_0_15px_#db2777]"></div>
         </div>
 
+        {/* Círculo de Glow Externo */}
+        <div className="absolute inset-[-10px] rounded-full bg-gradient-to-br from-pink-600/20 to-transparent blur-2xl opacity-50"></div>
+
         <div 
-          className="w-full h-full rounded-full border-[10px] border-zinc-950 shadow-[0_0_40px_rgba(233,30,99,0.3)] overflow-hidden bg-zinc-950 relative transform-gpu"
+          className="w-full h-full rounded-full border-[8px] border-zinc-950 shadow-[0_0_40px_rgba(233,30,99,0.3)] overflow-hidden bg-zinc-950 relative transform-gpu"
           style={{ 
             transform: `rotate(${rotation}deg)`,
             transition: isSpinning ? 'transform 4.5s cubic-bezier(0.15, 0, 0.05, 1)' : 'none'
@@ -91,76 +76,55 @@ export const Wheel: React.FC<WheelProps> = ({ category, onComplete, history, spi
                 <path 
                   d="M 50 50 L 50 0 A 50 50 0 0 1 75 6.7 Z" 
                   fill={i % 2 === 0 ? '#db2777' : '#9d174d'}
-                  stroke="#ffffff10"
-                  strokeWidth="0.1"
+                  stroke="#ffffff08"
+                  strokeWidth="0.2"
                 />
+                <text x="50" y="22" transform={`rotate(15 50 22)`} textAnchor="middle" fill="#ffffff15" fontSize="2.8" fontWeight="900">PLAY</text>
               </g>
             ))}
           </svg>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-zinc-950 rounded-full border-[4px] border-zinc-900 shadow-2xl flex flex-col items-center justify-center text-[10px] font-black uppercase tracking-[0.2em] text-yellow-500">
-            <span className="italic">LUNA</span>
+          {/* Centro da Roleta Luna */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 bg-zinc-950 rounded-full border-[4px] border-zinc-900 shadow-[0_0_20px_rgba(0,0,0,1)] flex flex-col items-center justify-center text-[9px] font-black uppercase tracking-[0.2em] text-yellow-500">
+            <span className="italic leading-none drop-shadow-md">LUNA</span>
           </div>
         </div>
       </div>
 
-      <div className="w-full text-center space-y-6 px-4">
+      <div className="w-full text-center space-y-6">
         {hasNoSpins ? (
-          <div className="bg-red-500/10 border-2 border-red-500/50 p-6 rounded-[2.5rem] space-y-4 animate-in zoom-in">
-            <p className="text-white text-xs font-black uppercase italic leading-tight">
-              Giros acabaram! Ganhe novos giros em 7 dias ou libere acesso TOTAL e VITALÍCIO agora por apenas R$ 0,01.
+          <div className="bg-[#0f1525] border-2 border-red-500/30 p-6 rounded-[2.5rem] space-y-4 animate-in zoom-in shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-full animate-shimmer opacity-5 pointer-events-none"></div>
+            <p className="text-white text-[10px] font-black uppercase italic leading-tight relative z-10">
+              SEUS GIROS GRÁTIS ACABARAM! GANHE NOVOS EM 7 DIAS OU LIBERE TUDO AGORA POR APENAS R$ 0,01.
             </p>
             <button 
               onClick={onCheckout}
-              className="w-full py-5 bg-yellow-500 text-black rounded-2xl font-black uppercase tracking-widest text-sm shadow-[0_6px_0_rgb(161,98,7)] active:scale-95 active:shadow-none transition-all"
+              className="w-full py-5 bg-yellow-500 text-black rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg animate-heartbeat relative z-10"
             >
-              LIBERAR PIX AGORA 🚀
+              LIBERAR TUDO AGORA 🚀
             </button>
-            <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Novos giros grátis toda semana!</p>
+            <p className="text-[7px] font-black text-zinc-500 uppercase tracking-widest relative z-10">Novos giros grátis toda semana!</p>
           </div>
         ) : (
-          <>
-            <div className="flex flex-col items-center space-y-1">
-              <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Giros Restantes</span>
-              <div className="flex space-x-2">
+          <div className="space-y-6">
+            <div className="flex flex-col items-center space-y-2">
+              <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] opacity-60">GIROS RESTANTES</span>
+              <div className="flex space-x-2 bg-[#0f1525] p-2 rounded-full border border-white/5">
                 {Array.from({ length: 3 }).map((_, idx) => (
-                  <div key={idx} className={`w-3 h-3 rounded-full transition-all duration-500 ${isVip ? 'bg-yellow-500 animate-pulse' : idx < spinsRemaining ? 'bg-pink-500 shadow-[0_0_8px_rgba(233,30,99,0.5)] scale-110' : 'bg-zinc-800 opacity-30'}`}></div>
+                  <div key={idx} className={`w-2.5 h-2.5 rounded-full transition-all duration-700 ${isVip ? 'bg-yellow-500 animate-pulse shadow-[0_0_8px_rgba(251,191,36,0.6)]' : idx < spinsRemaining ? 'bg-pink-500 shadow-[0_0_10px_rgba(233,30,99,0.7)] scale-110' : 'bg-zinc-800 opacity-20'}`}></div>
                 ))}
               </div>
             </div>
             <button 
               onClick={spin}
               disabled={isSpinning}
-              className="w-full py-5 bg-gradient-to-br from-pink-600 to-pink-500 rounded-[2rem] font-black text-xl uppercase tracking-widest shadow-[0_8px_0_rgb(157,23,77)] active:translate-y-2 active:shadow-none transition-all"
+              className="w-full py-5 bg-gradient-to-br from-pink-600 to-pink-500 rounded-3xl font-black text-xl uppercase tracking-widest shadow-[0_8px_0_rgb(157,23,77)] animate-heartbeat active:translate-y-1 active:shadow-none transition-all"
             >
               {isSpinning ? 'GIRANDO...' : 'GIRAR 🎰'}
             </button>
-          </>
+          </div>
         )}
       </div>
-
-      {showModal && selectedItem && (
-        <div className="fixed inset-0 z-[250] bg-black/98 backdrop-blur-3xl flex items-center justify-center p-6 animate-in fade-in duration-300">
-          <div className="bg-[#0f1525] border-6 border-pink-500/20 w-full max-w-[340px] rounded-[3rem] overflow-hidden p-10 space-y-8 text-center shadow-2xl">
-            <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter leading-none">{selectedItem.nome}</h2>
-            <div className="bg-black/80 p-8 rounded-[2rem] border-2 border-zinc-900 shadow-inner">
-              <p className="text-2xl text-zinc-100 font-black leading-tight italic">"{selectedItem.descricao}"</p>
-            </div>
-            {timer !== null && (
-              <div className="text-6xl font-black text-pink-500 font-mono">00:{timer < 10 ? `0${timer}` : timer}</div>
-            )}
-            <div className="flex flex-col space-y-4">
-              <button 
-                onClick={() => { if (timer === null) startTimer(); else if (timer === 0) { onComplete(selectedItem); setShowModal(false); setTimer(null); } }}
-                disabled={timer !== null && timer > 0}
-                className="w-full py-6 rounded-2xl font-black text-xl uppercase tracking-widest bg-pink-600 text-white shadow-xl active:scale-95 transition-all disabled:opacity-50"
-              >
-                {timer === null ? 'INICIAR AGORA ⏳' : timer === 0 ? 'CONCLUÍDO (+20)' : 'AGUARDE...'}
-              </button>
-              <button onClick={() => setShowModal(false)} disabled={timer !== null && timer > 0} className="w-full py-4 text-zinc-600 font-black uppercase text-[9px] tracking-widest">TROCAR POSIÇÃO ✕</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
