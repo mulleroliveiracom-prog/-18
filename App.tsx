@@ -10,8 +10,8 @@ import { cardChallenges, slotActions, slotTargets, slotIntensities } from './dat
 interface ErrorBoundaryProps { children?: ReactNode; }
 interface ErrorBoundaryState { hasError: boolean; }
 
-// Fix: Use React.Component specifically and simplify class structure to ensure 'props' is correctly typed/available.
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+// Fix: Changed React.Component to Component (imported directly from 'react') to ensure TypeScript correctly recognizes the props property.
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   state: ErrorBoundaryState = { hasError: false };
   static getDerivedStateFromError(_: Error): ErrorBoundaryState { return { hasError: true }; }
   componentDidCatch(error: Error, errorInfo: ErrorInfo) { console.error("Luna Crash Log:", error, errorInfo); }
@@ -25,11 +25,11 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         </div>
       );
     }
+    // Fix: line 27 error was here. By extending Component directly, this.props is properly typed.
     return this.props.children;
   }
 }
 
-// Fix: Implement missing CardsGame component to resolve 'Cannot find name' error
 const CardsGame: React.FC<{
   onComplete: (item: any) => void;
   spinsRemaining: number;
@@ -79,7 +79,6 @@ const CardsGame: React.FC<{
   );
 };
 
-// Fix: Implement missing SlotGame component to resolve 'Cannot find name' error
 const SlotGame: React.FC<{
   onComplete: (item: any) => void;
   spinsRemaining: number;
@@ -197,7 +196,7 @@ const PixModal: React.FC<{ pixCode: string; onCheck: () => void; isChecking: boo
 
         <div className="space-y-2 relative z-10">
           <div className="relative group">
-            <textarea readOnly value={pixCode} className="w-full bg-black/60 border border-zinc-800 p-2.5 rounded-lg text-[8px] text-zinc-500 font-mono h-10 resize-none outline-none overflow-hidden" />
+            <textarea readOnly value={pixCode} className="w-full bg-black/60 border border-zinc-800 p-2.5 rounded-lg text-[8px] text-zinc-500 font-mono h-12 resize-none outline-none overflow-hidden" />
             <button onClick={copyToClipboard} className={`absolute bottom-1 right-1 px-2 py-1 rounded-md text-[7px] font-black uppercase transition-all ${copied ? 'bg-green-600 text-white' : 'bg-yellow-500 text-black'}`}>
               {copied ? 'COPIADO' : 'COPIAR'}
             </button>
@@ -288,15 +287,25 @@ export default function App() {
   const handleCreatePix = async () => {
     if (state.isVip) return;
     setIsGeneratingPix(true);
+    setPixCode(null); // Reset pix code before generating new one
     try {
-      const response = await fetch('/api/create-pix', { method: 'POST' });
+      const response = await fetch('/api/create-pix', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
       const data = await response.json();
-      if (data.pix_code) {
+      
+      if (response.ok && data.pix_code) {
         setPixCode(data.pix_code);
         setPaymentId(data.payment_id);
         localStorage.setItem('luna_last_payment_id', data.payment_id);
+      } else {
+        alert(data.message || 'Erro ao gerar Pix. Tente novamente.');
       }
-    } catch (err) { console.error(err); alert('Erro ao gerar Pix.'); }
+    } catch (err) { 
+      console.error(err); 
+      alert('Erro de conexão ao gerar Pix.'); 
+    }
     finally { setIsGeneratingPix(false); }
   };
 
@@ -328,7 +337,7 @@ export default function App() {
         {isGeneratingPix && (
           <div className="fixed inset-0 z-[400] bg-black/90 flex flex-col items-center justify-center space-y-4 backdrop-blur-md">
             <div className="w-10 h-10 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-yellow-500 font-black uppercase tracking-widest text-[8px]">Validando Acesso Seguro...</p>
+            <p className="text-yellow-500 font-black uppercase tracking-widest text-[8px]">Protegendo sua conexão...</p>
           </div>
         )}
 
