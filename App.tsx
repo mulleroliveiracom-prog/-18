@@ -1,5 +1,5 @@
+
 import React, { useState, useEffect, ReactNode, ErrorInfo, Component } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
 import { Category, GameItem } from './types';
 import { useGameStore } from './hooks/useGameStore';
 import { Wheel } from './components/Wheel';
@@ -14,13 +14,10 @@ interface ErrorBoundaryState {
   hasError: boolean;
 }
 
-// Fix: Extending Component directly from react to ensure state and props are correctly typed
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    // Fix: state is correctly recognized as a property of the class
-    this.state = { hasError: false };
-  }
+// Fixed ErrorBoundary by using React.Component and initializing state directly to resolve TS errors.
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  // Initialize state directly in the class to ensure it exists on the type
+  state: ErrorBoundaryState = { hasError: false };
 
   static getDerivedStateFromError(_: Error): ErrorBoundaryState {
     return { hasError: true };
@@ -31,7 +28,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   render() {
-    // Fix: state property access is now correctly recognized
+    // Correctly accessing this.state.hasError
     if (this.state.hasError) {
       return (
         <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 text-center">
@@ -47,7 +44,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
         </div>
       );
     }
-    // Fix: props property access is now correctly recognized
+    // Correctly accessing this.props.children
     return this.props.children;
   }
 }
@@ -61,6 +58,9 @@ const PixModal: React.FC<{ pixCode: string; onClose: () => void }> = ({ pixCode,
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // URL para a API de geração de QR Code
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixCode)}`;
+
   return (
     <div className="fixed inset-0 z-[300] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-6 animate-in fade-in zoom-in duration-300">
       <div className="bg-[#0f1525] border-4 border-yellow-400/60 w-full max-w-[340px] rounded-[3rem] p-8 text-center space-y-6 shadow-[0_0_50px_rgba(251,191,36,0.3)] ring-2 ring-yellow-500/20">
@@ -70,15 +70,14 @@ const PixModal: React.FC<{ pixCode: string; onClose: () => void }> = ({ pixCode,
           <p className="text-yellow-500 text-[9px] font-black uppercase tracking-[0.3em]">OFERTA LIMITADA VIP</p>
         </div>
 
-        {/* QR Code Section */}
+        {/* QR Code Section using API Image */}
         <div className="space-y-4">
-          <div className="bg-white p-4 rounded-3xl inline-block shadow-2xl transform hover:scale-105 transition-transform duration-500">
-            <QRCodeSVG 
-              value={pixCode} 
-              size={180} 
-              level="M" 
-              includeMargin={false}
-              className="mx-auto"
+          <div className="bg-white p-4 rounded-3xl inline-block shadow-2xl transform hover:scale-105 transition-transform duration-500 overflow-hidden">
+            <img 
+              src={qrCodeUrl} 
+              alt="QR Code Pix" 
+              className="w-[180px] h-[180px] mx-auto block"
+              loading="lazy"
             />
           </div>
           <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider">
