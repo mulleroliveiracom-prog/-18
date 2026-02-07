@@ -11,11 +11,13 @@ interface ErrorBoundaryState { hasError: boolean; }
 
 /**
  * ErrorBoundary class component to catch rendering errors in its child components.
- * Fix: Explicitly extend React.Component and use class property for state to resolve TypeScript property access errors.
+ * Fix: Use standard constructor pattern to ensure 'props' and 'state' are correctly recognized by TypeScript as members of the class.
  */
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  // Use class property instead of initializing in constructor to avoid "Property 'state' does not exist" errors
-  state: ErrorBoundaryState = { hasError: false };
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
   static getDerivedStateFromError(_: Error): ErrorBoundaryState {
     return { hasError: true };
@@ -35,7 +37,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         </div>
       );
     }
-    // Accessing this.props should now be correctly typed and recognized
+    // Correctly accessing children from this.props
     return this.props.children;
   }
 }

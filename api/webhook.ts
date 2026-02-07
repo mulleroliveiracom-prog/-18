@@ -19,7 +19,7 @@ export default async function handler(req: any, res: any) {
     const paymentId = data?.id || req.query.id;
 
     if ((type === 'payment' || action?.includes('payment')) && paymentId) {
-      const accessToken = process.env.MP_ACCESS_TOKEN;
+      const accessToken = 'APP_USR-5326774431367267-020617-e374b14b58e3c8e099ca0b14e1eea16e-3187571746';
 
       const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
         method: 'GET',
@@ -37,8 +37,6 @@ export default async function handler(req: any, res: any) {
 
       if (paymentData.status === 'approved') {
         console.log(`[LUNA WEBHOOK] Pagamento ${paymentId} APROVADO.`);
-        // Aqui o frontend fará a verificação manual ou via polling
-        // Como o app é client-side, o webhook serve principalmente para o seu log/banco de dados
         return res.status(200).json({ status: 'approved' });
       }
     }
@@ -46,6 +44,6 @@ export default async function handler(req: any, res: any) {
     return res.status(200).send('Notificação recebida');
   } catch (error) {
     console.error('[LUNA WEBHOOK ERROR]', error);
-    return res.status(200).send('Erro processado'); // Sempre 200 para evitar retentativas infinitas do MP
+    return res.status(200).send('Erro processado'); 
   }
 }

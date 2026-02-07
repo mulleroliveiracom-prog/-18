@@ -5,18 +5,15 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ message: 'Método não permitido' });
   }
 
-  const accessToken = process.env.MP_ACCESS_TOKEN;
-
-  if (!accessToken) {
-    return res.status(500).json({ message: 'Configuração de Token (MP_ACCESS_TOKEN) ausente no servidor.' });
-  }
+  // Token de Acesso fornecido pelo usuário
+  const accessToken = 'APP_USR-5326774431367267-020617-e374b14b58e3c8e099ca0b14e1eea16e-3187571746';
 
   try {
     const paymentData = {
       transaction_amount: 1.00,
       // Descrição oficial que aparece no checkout e comprovante
       description: 'LUNA SUTRA VIP - ACESSO VITALÍCIO (CNPJ 64.988.605/0001-15)',
-      // Texto que aparece no extrato bancário do cliente
+      // Texto que aparece no extrato bancário do cliente (Limitado a 13-15 caracteres)
       statement_descriptor: 'LUNA SUTRA',
       payment_method_id: 'pix',
       notification_url: 'https://lunasutra.vercel.app/api/webhook',
