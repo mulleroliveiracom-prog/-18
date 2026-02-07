@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, ReactNode, ErrorInfo } from 'react';
+import React, { useState, useEffect, ReactNode, ErrorInfo, Component } from 'react';
 import { Category, GameItem } from './types';
 import { useGameStore } from './hooks/useGameStore';
 import { Wheel } from './components/Wheel';
@@ -10,18 +9,27 @@ import { cardChallenges, slotActions, slotTargets, slotIntensities } from './dat
 interface ErrorBoundaryProps { children?: ReactNode; }
 interface ErrorBoundaryState { hasError: boolean; }
 
-// Use React.Component explicitly to ensure 'props' and 'state' are correctly inherited and typed in TypeScript.
+// ErrorBoundary class component to catch rendering errors.
+// Fixed errors: "Property 'state' does not exist on type 'ErrorBoundary'" and "Property 'props' does not exist on type 'ErrorBoundary'".
+// Replaced constructor initialization with class property for state and used React.Component explicitly.
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   state: ErrorBoundaryState = { hasError: false };
-  static getDerivedStateFromError(_: Error): ErrorBoundaryState { return { hasError: true }; }
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) { console.error("Luna Crash Log:", error, errorInfo); }
+
+  static getDerivedStateFromError(_: Error): ErrorBoundaryState {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("Luna Crash Log:", error, errorInfo);
+  }
+
   render() {
     if (this.state.hasError) {
       return (
         <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 text-center">
           <div className="text-6xl mb-4 text-red-600">⚠️</div>
-          <h2 className="text-2xl font-black text-white uppercase mb-4">Ops! Algo deu errado.</h2>
-          <button onClick={() => window.location.reload()} className="bg-white text-black px-8 py-4 rounded-2xl font-black uppercase tracking-widest">RECARREGAR LUNA</button>
+          <h2 className="text-2xl font-black text-white uppercase mb-4 font-luxury">Ops! Algo deu errado.</h2>
+          <button onClick={() => window.location.reload()} className="bg-white text-black px-8 py-4 rounded-2xl font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95">RECARREGAR LUNA</button>
         </div>
       );
     }
@@ -59,17 +67,19 @@ const CardsGame: React.FC<{
   const hasNoSpins = !isVip && spinsRemaining <= 0;
 
   if (hasNoSpins) return (
-    <div className="bg-[#0f1525] border-2 border-red-500/20 p-8 rounded-[3rem] text-center space-y-4 animate-in zoom-in">
+    <div className="bg-[#0f1525] border-2 border-red-500/20 p-8 rounded-[3rem] text-center space-y-4 animate-in zoom-in shadow-2xl">
+      <div className="text-4xl">🎴</div>
       <p className="text-white text-[10px] font-black uppercase italic leading-tight">CARTAS ESGOTADAS! NOVOS GIROS EM {daysUntilReset} DIAS.</p>
-      <button onClick={onCheckout} className="w-full py-4 bg-yellow-500 text-black rounded-xl font-black uppercase tracking-widest text-[10px]">LIBERAR AGORA 🚀</button>
+      <button onClick={onCheckout} className="w-full py-4 bg-yellow-500 text-black rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg animate-glow-gold animate-heartbeat">LIBERAR AGORA R$ 1,00 🚀</button>
     </div>
   );
 
   return (
     <div className="flex flex-col items-center space-y-8 py-4">
-      <div className={`w-56 h-80 rounded-[2rem] border-4 border-yellow-500/30 flex items-center justify-center relative overflow-hidden transition-all duration-1000 ${isRevealing ? 'rotate-y-180 scale-105 shadow-[0_0_50px_rgba(251,191,36,0.2)]' : ''} bg-[#0f1525] shadow-2xl`}>
+      <div className={`w-56 h-80 rounded-[2rem] border-4 border-yellow-500/30 flex items-center justify-center relative overflow-hidden transition-all duration-1000 ${isRevealing ? 'rotate-y-180 scale-105 shadow-[0_0_50px_rgba(251,191,36,0.3)]' : ''} bg-[#0f1525] shadow-2xl`}>
          <div className="text-6xl animate-bounce">🃏</div>
          <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-transparent"></div>
+         {isRevealing && <div className="absolute inset-0 bg-yellow-500/20 animate-pulse"></div>}
       </div>
       <button onClick={drawCard} disabled={isRevealing} className="w-full py-5 bg-gradient-to-r from-zinc-100 to-white text-black rounded-2xl font-black uppercase tracking-widest text-sm shadow-[0_6px_0_rgb(200,200,200)] active:translate-y-1 transition-all">
         {isRevealing ? 'REVELANDO...' : 'PUXAR CARTA ✨'}
@@ -124,9 +134,10 @@ const SlotGame: React.FC<{
   const hasNoSpins = !isVip && spinsRemaining <= 0;
 
   if (hasNoSpins) return (
-    <div className="bg-[#0f1525] border-2 border-red-500/20 p-8 rounded-[3rem] text-center space-y-4 animate-in zoom-in">
-      <p className="text-white text-[10px] font-black uppercase italic leading-tight">SLOTS ESGOTADOS! LIBERE O ACESSO VIP.</p>
-      <button onClick={onCheckout} className="w-full py-4 bg-yellow-500 text-black rounded-xl font-black uppercase tracking-widest text-[10px]">LIBERAR AGORA 🚀</button>
+    <div className="bg-[#0f1525] border-2 border-red-500/20 p-8 rounded-[3rem] text-center space-y-4 animate-in zoom-in shadow-2xl">
+      <div className="text-4xl">🎰</div>
+      <p className="text-white text-[10px] font-black uppercase italic leading-tight">SLOTS ESGOTADOS! LIBERE O ACESSO VIP VITALÍCIO.</p>
+      <button onClick={onCheckout} className="w-full py-4 bg-yellow-500 text-black rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg animate-glow-gold animate-heartbeat">LIBERAR AGORA R$ 1,00 🚀</button>
     </div>
   );
 
@@ -140,7 +151,7 @@ const SlotGame: React.FC<{
         ))}
       </div>
       <button onClick={spin} disabled={isSpinning} className="w-full py-5 bg-gradient-to-br from-yellow-600 to-yellow-400 text-black rounded-2xl font-black uppercase tracking-widest text-sm shadow-[0_6px_0_rgb(161,98,7)] active:translate-y-1 transition-all animate-glow-gold">
-        {isSpinning ? 'GIRANDO...' : 'GIRAR SLOT 🎰'}
+        {isSpinning ? 'COMBINANDO...' : 'GIRAR SLOT ⚡'}
       </button>
     </div>
   );
@@ -182,22 +193,25 @@ const PixModal: React.FC<{ pixCode: string; onCheck: () => void; isChecking: boo
       <div className="bg-[#0f1525] border-2 border-yellow-400/50 w-full max-w-[320px] rounded-[3rem] p-6 text-center space-y-4 shadow-[0_0_50px_rgba(251,191,36,0.3)] relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full animate-shimmer pointer-events-none opacity-10"></div>
         <div className="space-y-1 relative z-10">
-          <h2 className="text-xl font-black text-white uppercase italic tracking-tighter">ACESSO VITALÍCIO</h2>
-          <p className="text-yellow-500 text-[8px] font-black uppercase tracking-[0.3em]">OFERTA VIP R$ 1,00</p>
+          <h2 className="text-xl font-black text-white uppercase italic tracking-tighter font-luxury">ACESSO VITALÍCIO</h2>
+          <p className="text-yellow-500 text-[8px] font-black uppercase tracking-[0.3em]">LUNA SUTRA PREMIUM - R$ 1,00</p>
         </div>
 
         <div className="space-y-2 relative z-10 flex flex-col items-center">
           <div className="bg-white p-2 rounded-xl inline-block shadow-lg">
             <img src={qrCodeUrl} alt="QR Code Pix" className="w-[120px] h-[120px] block" loading="lazy" />
           </div>
-          <p className="text-zinc-500 text-[8px] font-bold uppercase tracking-wider">Aponte a câmera ou copie abaixo</p>
+          <div className="space-y-1 mt-2">
+            <p className="text-zinc-500 text-[8px] font-bold uppercase tracking-wider">PAGAMENTO OFICIAL LUNA SUTRA</p>
+            <p className="text-zinc-400 text-[8px] font-black uppercase tracking-widest">CNPJ: 64.988.605/0001-15</p>
+          </div>
         </div>
 
         <div className="space-y-2 relative z-10">
           <div className="relative group">
             <textarea readOnly value={pixCode} className="w-full bg-black/60 border border-zinc-800 p-2.5 rounded-lg text-[8px] text-zinc-500 font-mono h-12 resize-none outline-none overflow-hidden" />
             <button onClick={copyToClipboard} className={`absolute bottom-1 right-1 px-2 py-1 rounded-md text-[7px] font-black uppercase transition-all ${copied ? 'bg-green-600 text-white' : 'bg-yellow-500 text-black'}`}>
-              {copied ? 'COPIADO' : 'COPIAR'}
+              {copied ? 'COPIADO' : 'COPIAR PIX'}
             </button>
           </div>
         </div>
@@ -210,7 +224,7 @@ const PixModal: React.FC<{ pixCode: string; onCheck: () => void; isChecking: boo
           >
             {isChecking ? 'VERIFICANDO...' : 'JÁ PAGUEI ✅'}
           </button>
-          <button onClick={onClose} className="w-full py-1 text-zinc-600 font-black uppercase text-[8px] tracking-widest hover:text-white">VOLTAR</button>
+          <button onClick={onClose} className="w-full py-1 text-zinc-600 font-black uppercase text-[8px] tracking-widest hover:text-white transition-colors">VOLTAR PARA O APP</button>
         </div>
       </div>
     </div>
@@ -221,39 +235,70 @@ const Onboarding: React.FC<{ onComplete: (n: string, p: string) => void }> = ({ 
   const [step, setStep] = useState(0);
   const [userName, setUserName] = useState('');
   const [partnerName, setPartnerName] = useState('');
+
+  const handleNext = () => setStep(prev => prev + 1);
+
   if (step === 0) return (
     <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 text-center overflow-hidden z-[300]">
+      <div className="absolute inset-0 animate-shimmer opacity-10 pointer-events-none"></div>
       <div className="relative z-10 space-y-12 animate-in fade-in duration-1000 max-w-sm w-full">
-        <div className="w-32 h-32 border-4 border-yellow-500/50 rounded-full flex flex-col items-center justify-center mx-auto bg-black/60 shadow-[0_0_40px_rgba(251,191,36,0.3)] animate-pulse">
-          <span className="text-4xl font-black text-white">18+</span>
-          <span className="text-[8px] font-black text-yellow-600 uppercase mt-1">ACESSO VIP</span>
+        <div className="space-y-4">
+          <div className="w-24 h-24 border-4 border-yellow-500/50 rounded-full flex flex-col items-center justify-center mx-auto bg-black/60 shadow-[0_0_40px_rgba(251,191,36,0.3)] animate-pulse">
+            <span className="text-3xl font-black text-white">18+</span>
+          </div>
+          <h1 className="text-5xl font-black text-white italic tracking-tighter uppercase leading-none font-luxury">LUNA<br/><span className="text-yellow-500">SUTRA</span></h1>
         </div>
-        <h1 className="text-5xl font-black text-white italic tracking-tighter uppercase leading-none">LUNA<br/><span className="text-yellow-500">SUTRA</span></h1>
-        <button 
-          onClick={() => setStep(1)} 
-          className="w-full bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-600 text-black py-5 rounded-2xl text-lg font-black uppercase tracking-widest shadow-xl animate-glow-gold animate-heartbeat transition-all"
-        >
-          SOU MAIOR DE IDADE
-        </button>
+        
+        <div className="space-y-6">
+          <p className="text-zinc-400 text-xs font-medium uppercase tracking-[0.2em] leading-relaxed">
+            Bem-vindo ao Clímax do seu Relacionamento.<br/>
+            Uma experiência VIP desenhada para casais que buscam o extraordinário.
+          </p>
+          <button 
+            onClick={handleNext} 
+            className="w-full bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-600 text-black py-5 rounded-2xl text-lg font-black uppercase tracking-widest shadow-xl animate-heartbeat transition-all active:scale-95"
+          >
+            ENTRAR NO CLUBE 🔒
+          </button>
+        </div>
+      </div>
+      <div className="absolute bottom-10 text-[8px] text-zinc-600 font-black uppercase tracking-widest">
+        Luna Sutra &copy; 2025 | CNPJ 64.988.605/0001-15
       </div>
     </div>
   );
+
   return (
     <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 animate-in slide-in-from-right duration-500 z-[300]">
       <div className="w-full max-w-[300px] space-y-10">
-        <h2 className="text-3xl font-black text-yellow-500 italic uppercase leading-none text-center">PERFIL VIP</h2>
-        <div className="space-y-6">
-          <input value={userName} onChange={e => setUserName(e.target.value)} className="w-full bg-[#0f1525] border-2 border-zinc-900 p-5 rounded-2xl text-white text-lg font-black uppercase outline-none focus:border-yellow-500/50" placeholder="SEU NOME" />
-          <input value={partnerName} onChange={e => setPartnerName(e.target.value)} className="w-full bg-[#0f1525] border-2 border-zinc-900 p-5 rounded-2xl text-white text-lg font-black uppercase outline-none focus:border-yellow-500/50" placeholder="NOME DO PAR" />
+        <div className="text-center space-y-2">
+          <h2 className="text-3xl font-black text-yellow-500 italic uppercase leading-none font-luxury">SEU PERFIL</h2>
+          <p className="text-zinc-600 text-[8px] font-black uppercase tracking-widest">PERSONALIZAÇÃO DA EXPERIÊNCIA</p>
         </div>
-        <button disabled={!userName || !partnerName} onClick={() => onComplete(userName, partnerName)} className="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 py-5 rounded-2xl text-lg font-black uppercase text-black disabled:opacity-30 shadow-lg shadow-yellow-500/20">COMEÇAR AGORA 🔒</button>
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-zinc-500 text-[8px] font-black uppercase ml-2 tracking-widest">Seu Nome</label>
+            <input value={userName} onChange={e => setUserName(e.target.value)} className="w-full bg-[#0f1525] border-2 border-zinc-900 p-5 rounded-2xl text-white text-lg font-black uppercase outline-none focus:border-yellow-500/50 transition-all shadow-xl" placeholder="EX: MARCOS" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-zinc-500 text-[8px] font-black uppercase ml-2 tracking-widest">Nome do Par</label>
+            <input value={partnerName} onChange={e => setPartnerName(e.target.value)} className="w-full bg-[#0f1525] border-2 border-zinc-900 p-5 rounded-2xl text-white text-lg font-black uppercase outline-none focus:border-yellow-500/50 transition-all shadow-xl" placeholder="EX: JULIA" />
+          </div>
+        </div>
+        <button 
+          disabled={!userName || !partnerName} 
+          onClick={() => onComplete(userName, partnerName)} 
+          className="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 py-5 rounded-2xl text-lg font-black uppercase text-black disabled:opacity-30 shadow-lg shadow-yellow-500/20 active:scale-95 transition-all"
+        >
+          COMEÇAR AGORA ✨
+        </button>
       </div>
     </div>
   );
 };
 
 export default function App() {
-  const { state, updateProfile, addCompletion, unlockGame, completeTutorial, useSpin, setVipStatus, getDaysUntilReset } = useGameStore();
+  const { state, updateProfile, addCompletion, unlockGame, useSpin, setVipStatus, getDaysUntilReset } = useGameStore();
   const [activeTab, setActiveTab] = useState<'girar' | 'cards' | 'slot' | 'loja' | 'vip'>('girar');
   const [category, setCategory] = useState<Category>(Category.Warmup);
   const [activeMission, setActiveMission] = useState<any>(null);
@@ -277,12 +322,6 @@ export default function App() {
     setLastCoins(state.coins);
   }, [state.coins]);
 
-  useEffect(() => {
-    const handleFocus = () => { if (paymentId && !state.isVip) handleCheckPayment(); };
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [paymentId, state.isVip]);
-
   const handleCreatePix = async () => {
     if (state.isVip) return;
     setIsGeneratingPix(true);
@@ -299,13 +338,11 @@ export default function App() {
         setPaymentId(data.payment_id);
         localStorage.setItem('luna_last_payment_id', data.payment_id);
       } else {
-        // Exibe o motivo real da falha retornado pela API
-        const errorMsg = data.details || data.message || 'Erro ao gerar Pix.';
-        alert(`Ocorreu um erro: ${errorMsg}`);
+        alert(data.details || data.message || 'O Mercado Pago recusou a transação. Tente novamente mais tarde.');
       }
     } catch (err) { 
       console.error(err); 
-      alert('Erro crítico de conexão ao servidor de pagamentos.'); 
+      alert('Serviço de pagamentos temporariamente indisponível. CNPJ: 64.988.605/0001-15'); 
     }
     finally { setIsGeneratingPix(false); }
   };
@@ -320,6 +357,8 @@ export default function App() {
         setVipStatus(true);
         setPixCode(null);
         localStorage.removeItem('luna_last_payment_id');
+      } else {
+        alert('Pagamento ainda não detectado. Se você já pagou via Pix, aguarde alguns instantes pela confirmação bancária.');
       }
     } catch (err) { console.error(err); }
     finally { setIsCheckingPayment(false); }
@@ -338,7 +377,7 @@ export default function App() {
         {isGeneratingPix && (
           <div className="fixed inset-0 z-[400] bg-black/90 flex flex-col items-center justify-center space-y-4 backdrop-blur-md">
             <div className="w-10 h-10 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-yellow-500 font-black uppercase tracking-widest text-[8px]">Protegendo sua conexão...</p>
+            <p className="text-yellow-500 font-black uppercase tracking-widest text-[8px] animate-pulse">Conectando ao Mercado Pago Seguro...</p>
           </div>
         )}
 
@@ -346,12 +385,12 @@ export default function App() {
           <div className="flex justify-between items-start">
             <div className="space-y-0.5">
                <h1 className="text-[7px] font-black text-yellow-500 uppercase tracking-widest opacity-60 leading-none">LUNA SUTRA VIP</h1>
-               <p className="text-xl font-black italic uppercase tracking-tighter leading-none">{state.userName} & {state.partnerName}</p>
+               <p className="text-xl font-black italic uppercase tracking-tighter leading-none font-luxury">{state.userName} & {state.partnerName}</p>
             </div>
             <div className="flex flex-col items-end space-y-1.5">
               <div className={`bg-[#0f1525] px-3 py-1.5 rounded-xl border border-zinc-800 flex items-center space-x-1.5 shadow-xl transition-all ${showHearts ? 'animate-coin-pop' : ''}`}>
                 <span className="text-lg font-black text-yellow-500">{state.coins}</span>
-                <span className="text-base animate-pulse">🪙</span>
+                <span className="text-base">🪙</span>
               </div>
               {state.isVip && <span className="text-[7px] font-black bg-yellow-500 text-black px-2.5 py-1 rounded-full uppercase tracking-widest animate-shimmer shadow-lg shadow-yellow-500/20">MEMBRO VIP</span>}
             </div>
@@ -363,7 +402,7 @@ export default function App() {
             <div className="py-2 space-y-6 flex flex-col items-center max-w-[340px] mx-auto">
                <div className="w-full flex bg-[#0f1525] p-1.5 rounded-[1.5rem] border border-zinc-800/50 shadow-2xl">
                 {Object.values(Category).map(cat => (
-                  <button key={cat} onClick={() => setCategory(cat)} className={`flex-1 py-3 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all ${category === cat ? 'bg-yellow-500 text-black scale-105 shadow-md' : 'text-zinc-600'}`}>{cat}</button>
+                  <button key={cat} onClick={() => setCategory(cat)} className={`flex-1 py-3 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all ${category === cat ? 'bg-yellow-500 text-black scale-105 shadow-md' : 'text-zinc-600 hover:text-zinc-400'}`}>{cat}</button>
                 ))}
               </div>
               <Wheel category={category} history={state.history} onComplete={(item) => setActiveMission({...item, reward: 20, timer: 35})} spinsRemaining={state.spins.wheel} isVip={state.isVip} onSpinUsed={() => useSpin('wheel')} onCheckout={handleCreatePix} daysUntilReset={getDaysUntilReset()} />
@@ -372,39 +411,41 @@ export default function App() {
           )}
 
           {activeTab === 'cards' && <div className="max-w-[340px] mx-auto py-2"><CardsGame onComplete={(item) => setActiveMission({...item, reward: 10, timer: 30})} spinsRemaining={state.spins.cards} isVip={state.isVip} useSpin={() => useSpin('cards')} onCheckout={handleCreatePix} daysUntilReset={getDaysUntilReset()} /></div>}
+          
           {activeTab === 'slot' && <div className="max-w-[340px] mx-auto py-2"><SlotGame onComplete={(item) => setActiveMission({...item, reward: 10, timer: 30})} spinsRemaining={state.spins.slots} isVip={state.isVip} useSpin={() => useSpin('slots')} onCheckout={handleCreatePix} /></div>}
+          
           {activeTab === 'loja' && <div className="max-w-[340px] mx-auto"><Store state={state} onUnlock={unlockGame} /></div>}
+          
           {activeTab === 'vip' && (
             <div className="px-4 py-8 space-y-8 text-center max-w-[300px] mx-auto animate-in slide-in-from-bottom">
                {state.isVip ? (
                  <div className="space-y-6">
-                    <div className="relative bg-gradient-to-br from-yellow-600 via-yellow-400 to-yellow-600 p-8 rounded-[3rem] shadow-[0_0_40px_rgba(251,191,36,0.3)] border-2 border-white/20 group">
+                    <div className="relative bg-gradient-to-br from-yellow-600 via-yellow-400 to-yellow-600 p-8 rounded-[3rem] shadow-[0_0_40px_rgba(251,191,36,0.3)] border-2 border-white/20">
                       <div className="absolute top-4 right-6 text-black/20 text-4xl font-black italic">VIP</div>
                       <div className="text-left space-y-4">
                         <div className="w-10 h-10 bg-black/10 rounded-full flex items-center justify-center text-xl">🏆</div>
                         <div className="space-y-0.5">
                           <p className="text-black/60 text-[8px] font-black uppercase tracking-widest">MEMBRO VITALÍCIO</p>
-                          <p className="text-black text-lg font-black italic uppercase leading-tight">{state.userName} & {state.partnerName}</p>
-                        </div>
-                        <div className="pt-4 flex justify-between items-end">
-                           <span className="text-black/40 text-[7px] font-bold">LUNA SUTRA CLUB PREMIUM</span>
-                           <span className="text-black text-xs font-black">ACTIVE</span>
+                          <p className="text-black text-lg font-black italic uppercase leading-tight font-luxury">{state.userName} & {state.partnerName}</p>
                         </div>
                       </div>
                     </div>
                     <div className="space-y-2">
-                       <h3 className="text-white font-black uppercase tracking-widest text-sm italic">VOCÊ É VIP!</h3>
-                       <p className="text-zinc-500 text-[10px] font-bold">Todos os jogos, giros e desafios estão liberados para vocês para sempre.</p>
+                       <h3 className="text-white font-black uppercase tracking-widest text-sm italic">STATUS PREMIUM ATIVO</h3>
+                       <p className="text-zinc-500 text-[10px] font-bold">CNPJ 64.988.605/0001-15 | Conta Verificada</p>
                     </div>
                  </div>
                ) : (
                  <div className="space-y-6">
                     <div className="text-6xl animate-bounce">🏆</div>
-                    <h2 className="text-3xl font-black text-yellow-500 uppercase italic tracking-tighter">Área VIP Luna</h2>
+                    <h2 className="text-3xl font-black text-yellow-500 uppercase italic tracking-tighter font-luxury">Área VIP Luna</h2>
                     <div className="bg-[#0f1525] p-8 rounded-[2.5rem] border-4 border-yellow-500/30 space-y-6 relative overflow-hidden shadow-2xl">
-                       <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest">LIBERAÇÃO IMEDIATA</p>
+                       <div className="space-y-2">
+                         <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest leading-tight">ATIVAÇÃO VITALÍCIA</p>
+                         <p className="text-zinc-500 text-[7px] font-black uppercase">CNPJ 64.988.605/0001-15</p>
+                       </div>
                        <div className="text-white text-4xl font-black animate-pulse">R$ 1,00</div>
-                       <button onClick={handleCreatePix} className="w-full py-5 bg-yellow-500 text-black rounded-2xl font-black uppercase tracking-widest text-lg shadow-[0_6px_0_rgb(161,98,7)] animate-heartbeat animate-glow-gold">LIBERAR AGORA 🔒</button>
+                       <button onClick={handleCreatePix} className="w-full py-5 bg-yellow-500 text-black rounded-2xl font-black uppercase tracking-widest text-lg shadow-[0_6px_0_rgb(161,98,7)] animate-heartbeat animate-glow-gold active:scale-95 transition-all">LIBERAR TUDO 🔒</button>
                     </div>
                  </div>
                )}
@@ -420,8 +461,8 @@ export default function App() {
             { id: 'loja', label: 'LOJA', icon: '👜' },
             { id: 'vip', label: 'VIP', icon: '🏆' }
           ].map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id as any)} className="flex flex-col items-center space-y-1 outline-none flex-1">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all duration-500 ${activeTab === item.id ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/30 -translate-y-2 scale-110' : 'text-zinc-600 opacity-60'}`}>{item.icon}</div>
+            <button key={item.id} onClick={() => setActiveTab(item.id as any)} className="flex flex-col items-center space-y-1 outline-none flex-1 group">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all duration-500 ${activeTab === item.id ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/30 -translate-y-2 scale-110' : 'text-zinc-600 opacity-60 group-hover:opacity-100'}`}>{item.icon}</div>
               <span className={`text-[7px] font-black tracking-widest transition-all ${activeTab === item.id ? 'text-yellow-500' : 'opacity-30'}`}>{item.label}</span>
             </button>
           ))}
@@ -430,16 +471,16 @@ export default function App() {
         {activeMission && (
           <div className="fixed inset-0 z-[250] bg-black/98 backdrop-blur-3xl flex items-center justify-center p-6 animate-in fade-in duration-500">
              <div className="bg-[#0f1525] border-2 border-yellow-500/20 w-full max-w-[300px] rounded-[3rem] text-center p-8 space-y-6 relative shadow-[0_0_100px_rgba(251,191,36,0.15)]">
-                <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter leading-tight">{activeMission.nome}</h2>
+                <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter leading-tight font-luxury">{activeMission.nome}</h2>
                 <div className="p-5 bg-black/60 rounded-[2rem] border border-zinc-900 shadow-inner">
                   <p className="text-lg text-white font-black italic">"{activeMission.descricao}"</p>
                 </div>
                 {missionTimer !== null && <div className="text-5xl font-black text-yellow-500 font-mono animate-pulse">00:{missionTimer < 10 ? `0${missionTimer}` : missionTimer}</div>}
                 <div className="flex flex-col space-y-4">
-                  <button onClick={() => { if (missionTimer === null) setMissionTimer(activeMission.timer || 30); else { addCompletion(activeMission.id, activeMission.reward); closeMission(); } }} disabled={missionTimer !== null && missionTimer > 0} className="w-full py-5 font-black rounded-2xl uppercase tracking-widest text-lg bg-yellow-500 text-black shadow-[0_6px_0_rgb(161,98,7)] animate-heartbeat disabled:opacity-50">
+                  <button onClick={() => { if (missionTimer === null) setMissionTimer(activeMission.timer || 30); else { addCompletion(activeMission.id, activeMission.reward); closeMission(); } }} disabled={missionTimer !== null && missionTimer > 0} className="w-full py-5 font-black rounded-2xl uppercase tracking-widest text-lg bg-yellow-500 text-black shadow-[0_6px_0_rgb(161,98,7)] animate-heartbeat disabled:opacity-50 active:scale-95 transition-all">
                     {missionTimer === null ? 'INICIAR AGORA ⏳' : missionTimer === 0 ? `CONCLUÍDO! (+${activeMission.reward})` : 'AGUARDE...'}
                   </button>
-                  <button onClick={closeMission} disabled={missionTimer !== null && missionTimer > 0} className="text-zinc-600 font-black uppercase text-[9px] tracking-widest">✕ FECHAR</button>
+                  <button onClick={closeMission} disabled={missionTimer !== null && missionTimer > 0} className="text-zinc-600 font-black uppercase text-[9px] tracking-widest hover:text-white transition-colors">✕ FECHAR</button>
                 </div>
              </div>
           </div>
