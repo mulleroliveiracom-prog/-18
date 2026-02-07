@@ -1,4 +1,4 @@
-import React, { useState, useEffect, ReactNode, ErrorInfo, Component } from 'react';
+import React, { useState, useEffect, ReactNode, ErrorInfo } from 'react';
 import { Category, GameItem } from './types';
 import { useGameStore } from './hooks/useGameStore';
 import { Wheel } from './components/Wheel';
@@ -9,10 +9,12 @@ import { cardChallenges, slotActions, slotTargets, slotIntensities } from './dat
 interface ErrorBoundaryProps { children?: ReactNode; }
 interface ErrorBoundaryState { hasError: boolean; }
 
-// ErrorBoundary class component to catch rendering errors.
-// Fixed errors: "Property 'state' does not exist on type 'ErrorBoundary'" and "Property 'props' does not exist on type 'ErrorBoundary'".
-// Replaced constructor initialization with class property for state and used React.Component explicitly.
+/**
+ * ErrorBoundary class component to catch rendering errors in its child components.
+ * Fix: Explicitly extend React.Component and use class property for state to resolve TypeScript property access errors.
+ */
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  // Use class property instead of initializing in constructor to avoid "Property 'state' does not exist" errors
   state: ErrorBoundaryState = { hasError: false };
 
   static getDerivedStateFromError(_: Error): ErrorBoundaryState {
@@ -29,61 +31,117 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 text-center">
           <div className="text-6xl mb-4 text-red-600">⚠️</div>
           <h2 className="text-2xl font-black text-white uppercase mb-4 font-luxury">Ops! Algo deu errado.</h2>
-          <button onClick={() => window.location.reload()} className="bg-white text-black px-8 py-4 rounded-2xl font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95">RECARREGAR LUNA</button>
+          <button onClick={() => window.location.reload()} className="bg-white text-black px-8 py-4 rounded-2xl font-black uppercase tracking-widest">RECARREGAR</button>
         </div>
       );
     }
+    // Accessing this.props should now be correctly typed and recognized
     return this.props.children;
   }
 }
+
+const TutorialModal: React.FC<{ 
+  title: string; 
+  subtitle: string; 
+  icon: string; 
+  steps: string[]; 
+  onClose: () => void;
+}> = ({ title, subtitle, icon, steps, onClose }) => (
+  <div className="fixed inset-0 z-[1000] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6 animate-in fade-in duration-300">
+    <div className="bg-[#1a1f2e] border-2 border-yellow-500/30 w-full max-w-[320px] rounded-[2.5rem] p-8 text-center space-y-6 shadow-[0_0_80px_rgba(0,0,0,1)]">
+      <div className="space-y-2">
+        <div className="text-5xl mb-2 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">{icon}</div>
+        <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter leading-none">{title}</h2>
+        <p className="text-yellow-500 text-[10px] font-black uppercase tracking-widest">{subtitle}</p>
+        <div className="w-12 h-1 bg-pink-600 mx-auto mt-2 rounded-full"></div>
+      </div>
+      <div className="bg-black/40 rounded-2xl p-5 text-left space-y-3 border border-white/5 shadow-inner">
+        {steps.map((step, i) => (
+          <p key={i} className="text-[10px] text-zinc-300 font-bold leading-relaxed flex items-start">
+            <span className="text-yellow-500 mr-2 font-black">{(i + 1)}.</span>
+            <span>{step}</span>
+          </p>
+        ))}
+      </div>
+      <div className="space-y-3">
+        <button onClick={onClose} className="w-full py-4 bg-[#22c55e] text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-[0_4px_0_rgb(21,128,61)] active:translate-y-1 transition-all">
+          ENTENDI! ✅
+        </button>
+        <button onClick={onClose} className="text-[8px] text-zinc-600 font-black uppercase tracking-[0.2em] hover:text-white transition-colors">PULAR EXPLICAÇÃO</button>
+      </div>
+    </div>
+  </div>
+);
 
 const CardsGame: React.FC<{
   onComplete: (item: any) => void;
   spinsRemaining: number;
   isVip: boolean;
-  useSpin: () => boolean;
+  useSpin: (type: any) => boolean;
   onCheckout: () => void;
   daysUntilReset: number;
 }> = ({ onComplete, spinsRemaining, isVip, useSpin, onCheckout, daysUntilReset }) => {
-  const [isRevealing, setIsRevealing] = useState(false);
+  const [revealingIndex, setRevealingIndex] = useState<number | null>(null);
+  const [revealedContent, setRevealedContent] = useState<{ index: number, text: string } | null>(null);
 
-  const drawCard = () => {
-    if (isRevealing) return;
-    if (!useSpin()) return;
-    setIsRevealing(true);
+  const drawCard = (index: number) => {
+    if (revealingIndex !== null || revealedContent !== null) return;
+    if (!useSpin('cards')) return;
+    
+    setRevealingIndex(index);
+    
     setTimeout(() => {
       const randomChallenge = cardChallenges[Math.floor(Math.random() * cardChallenges.length)];
-      setIsRevealing(false);
-      onComplete({
-        id: 'card-' + Date.now(),
-        nome: 'CARTA DO DESTINO',
-        descricao: randomChallenge,
-        reward: 10,
-        timer: 30
-      });
-    }, 1200);
+      setRevealingIndex(null);
+      setRevealedContent({ index, text: randomChallenge });
+      
+      // Pequeno delay para o usuário ver a carta virada antes do modal abrir
+      setTimeout(() => {
+        onComplete({
+          id: 'card-' + Date.now(),
+          nome: 'CARTA DO DESTINO',
+          descricao: randomChallenge,
+          reward: 10,
+          timer: 30
+        });
+        setRevealedContent(null);
+      }, 1200);
+    }, 800);
   };
 
   const hasNoSpins = !isVip && spinsRemaining <= 0;
 
   if (hasNoSpins) return (
-    <div className="bg-[#0f1525] border-2 border-red-500/20 p-8 rounded-[3rem] text-center space-y-4 animate-in zoom-in shadow-2xl">
+    <div className="bg-[#0f1525] border-2 border-red-500/20 p-8 rounded-[3rem] text-center space-y-4 animate-in zoom-in shadow-2xl mt-10">
       <div className="text-4xl">🎴</div>
       <p className="text-white text-[10px] font-black uppercase italic leading-tight">CARTAS ESGOTADAS! NOVOS GIROS EM {daysUntilReset} DIAS.</p>
-      <button onClick={onCheckout} className="w-full py-4 bg-yellow-500 text-black rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg animate-glow-gold animate-heartbeat">LIBERAR AGORA R$ 1,00 🚀</button>
+      <button onClick={onCheckout} className="w-full py-4 bg-yellow-500 text-black rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg animate-glow-gold">LIBERAR AGORA R$ 1,00 🚀</button>
     </div>
   );
 
   return (
-    <div className="flex flex-col items-center space-y-8 py-4">
-      <div className={`w-56 h-80 rounded-[2rem] border-4 border-yellow-500/30 flex items-center justify-center relative overflow-hidden transition-all duration-1000 ${isRevealing ? 'rotate-y-180 scale-105 shadow-[0_0_50px_rgba(251,191,36,0.3)]' : ''} bg-[#0f1525] shadow-2xl`}>
-         <div className="text-6xl animate-bounce">🃏</div>
-         <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-transparent"></div>
-         {isRevealing && <div className="absolute inset-0 bg-yellow-500/20 animate-pulse"></div>}
+    <div className="w-full flex flex-col items-center space-y-6 pt-4 animate-in fade-in duration-500">
+      <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter text-center font-luxury">CARDS DA<br/>SORTE</h2>
+      <div className="grid grid-cols-3 gap-3 w-full px-2 max-w-[320px]">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <button 
+            key={i} 
+            onClick={() => drawCard(i)}
+            disabled={revealingIndex !== null || revealedContent !== null}
+            className={`aspect-[3/4] rounded-2xl border-2 transition-all duration-700 shadow-lg flex items-center justify-center p-2 relative overflow-hidden ${
+              revealingIndex === i || revealedContent?.index === i 
+                ? 'bg-zinc-900 border-yellow-500 scale-105 shadow-[0_0_20px_rgba(251,191,36,0.3)]' 
+                : 'bg-[#0f1525] border-zinc-800 active:scale-95'
+            }`}
+          >
+            {revealedContent?.index === i ? (
+               <span className="text-[7px] font-black uppercase text-yellow-500 leading-tight animate-in fade-in zoom-in">{revealedContent.text}</span>
+            ) : (
+               <span className={`text-2xl transition-all ${revealingIndex === i ? 'animate-ping' : 'animate-pulse'}`}>❤️</span>
+            )}
+          </button>
+        ))}
       </div>
-      <button onClick={drawCard} disabled={isRevealing} className="w-full py-5 bg-gradient-to-r from-zinc-100 to-white text-black rounded-2xl font-black uppercase tracking-widest text-sm shadow-[0_6px_0_rgb(200,200,200)] active:translate-y-1 transition-all">
-        {isRevealing ? 'REVELANDO...' : 'PUXAR CARTA ✨'}
-      </button>
     </div>
   );
 };
@@ -92,7 +150,7 @@ const SlotGame: React.FC<{
   onComplete: (item: any) => void;
   spinsRemaining: number;
   isVip: boolean;
-  useSpin: () => boolean;
+  useSpin: (type: any) => boolean;
   onCheckout: () => void;
 }> = ({ onComplete, spinsRemaining, isVip, useSpin, onCheckout }) => {
   const [isSpinning, setIsSpinning] = useState(false);
@@ -100,9 +158,8 @@ const SlotGame: React.FC<{
 
   const spin = () => {
     if (isSpinning) return;
-    if (!useSpin()) return;
+    if (!useSpin('slots')) return;
     setIsSpinning(true);
-    
     let iters = 0;
     const interval = setInterval(() => {
       setSlots([
@@ -120,13 +177,7 @@ const SlotGame: React.FC<{
           slotIntensities[Math.floor(Math.random() * slotIntensities.length)]
         ];
         setSlots(final);
-        onComplete({
-          id: 'slot-' + Date.now(),
-          nome: 'SLOT PROIBIDO',
-          descricao: `${final[0]} ${final[1]} ${final[2]}`,
-          reward: 10,
-          timer: 30
-        });
+        onComplete({ id: 'slot-' + Date.now(), nome: 'SLOT PROIBIDO', descricao: `${final[0]} ${final[1]} ${final[2]}`, reward: 10, timer: 30 });
       }
     }, 80);
   };
@@ -134,15 +185,15 @@ const SlotGame: React.FC<{
   const hasNoSpins = !isVip && spinsRemaining <= 0;
 
   if (hasNoSpins) return (
-    <div className="bg-[#0f1525] border-2 border-red-500/20 p-8 rounded-[3rem] text-center space-y-4 animate-in zoom-in shadow-2xl">
+    <div className="bg-[#0f1525] border-2 border-red-500/20 p-8 rounded-[3rem] text-center space-y-4 animate-in zoom-in shadow-2xl mt-10">
       <div className="text-4xl">🎰</div>
       <p className="text-white text-[10px] font-black uppercase italic leading-tight">SLOTS ESGOTADOS! LIBERE O ACESSO VIP VITALÍCIO.</p>
-      <button onClick={onCheckout} className="w-full py-4 bg-yellow-500 text-black rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg animate-glow-gold animate-heartbeat">LIBERAR AGORA R$ 1,00 🚀</button>
+      <button onClick={onCheckout} className="w-full py-4 bg-yellow-500 text-black rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg animate-glow-gold">LIBERAR AGORA R$ 1,00 🚀</button>
     </div>
   );
 
   return (
-    <div className="space-y-8 py-4">
+    <div className="space-y-8 py-4 w-full animate-in fade-in duration-500">
       <div className="flex space-x-2">
         {slots.map((s, i) => (
           <div key={i} className="flex-1 h-28 bg-zinc-950 border-2 border-zinc-800 rounded-3xl flex items-center justify-center text-center p-2 shadow-inner overflow-hidden">
@@ -157,28 +208,6 @@ const SlotGame: React.FC<{
   );
 };
 
-const HeartExplosion: React.FC = () => {
-  const [hearts, setHearts] = useState<{ id: number; left: string; size: string; delay: string }[]>([]);
-  useEffect(() => {
-    const newHearts = Array.from({ length: 20 }).map((_, i) => ({
-      id: Date.now() + i,
-      left: `${Math.random() * 100}%`,
-      size: `${Math.random() * 20 + 10}px`,
-      delay: `${Math.random() * 0.5}s`,
-    }));
-    setHearts(newHearts);
-    const timer = setTimeout(() => setHearts([]), 3500);
-    return () => clearTimeout(timer);
-  }, []);
-  return (
-    <div className="fixed inset-0 pointer-events-none z-[999] overflow-hidden">
-      {hearts.map(h => (
-        <div key={h.id} className="particle-heart" style={{ left: h.left, fontSize: h.size, animationDelay: h.delay }}>❤️</div>
-      ))}
-    </div>
-  );
-};
-
 const PixModal: React.FC<{ pixCode: string; onCheck: () => void; isChecking: boolean; onClose: () => void }> = ({ pixCode, onCheck, isChecking, onClose }) => {
   const [copied, setCopied] = useState(false);
   const copyToClipboard = () => {
@@ -189,24 +218,19 @@ const PixModal: React.FC<{ pixCode: string; onCheck: () => void; isChecking: boo
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(pixCode)}`;
 
   return (
-    <div className="fixed inset-0 z-[300] bg-black/98 backdrop-blur-2xl flex items-center justify-center p-4 animate-in fade-in duration-500">
+    <div className="fixed inset-0 z-[1100] bg-black/98 backdrop-blur-2xl flex items-center justify-center p-4 animate-in fade-in duration-500">
       <div className="bg-[#0f1525] border-2 border-yellow-400/50 w-full max-w-[320px] rounded-[3rem] p-6 text-center space-y-4 shadow-[0_0_50px_rgba(251,191,36,0.3)] relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full animate-shimmer pointer-events-none opacity-10"></div>
         <div className="space-y-1 relative z-10">
           <h2 className="text-xl font-black text-white uppercase italic tracking-tighter font-luxury">ACESSO VITALÍCIO</h2>
           <p className="text-yellow-500 text-[8px] font-black uppercase tracking-[0.3em]">LUNA SUTRA PREMIUM - R$ 1,00</p>
         </div>
-
         <div className="space-y-2 relative z-10 flex flex-col items-center">
           <div className="bg-white p-2 rounded-xl inline-block shadow-lg">
             <img src={qrCodeUrl} alt="QR Code Pix" className="w-[120px] h-[120px] block" loading="lazy" />
           </div>
-          <div className="space-y-1 mt-2">
-            <p className="text-zinc-500 text-[8px] font-bold uppercase tracking-wider">PAGAMENTO OFICIAL LUNA SUTRA</p>
-            <p className="text-zinc-400 text-[8px] font-black uppercase tracking-widest">CNPJ: 64.988.605/0001-15</p>
-          </div>
+          <p className="text-zinc-400 text-[8px] font-black uppercase tracking-widest mt-2">CNPJ: 64.988.605/0001-15</p>
         </div>
-
         <div className="space-y-2 relative z-10">
           <div className="relative group">
             <textarea readOnly value={pixCode} className="w-full bg-black/60 border border-zinc-800 p-2.5 rounded-lg text-[8px] text-zinc-500 font-mono h-12 resize-none outline-none overflow-hidden" />
@@ -215,16 +239,11 @@ const PixModal: React.FC<{ pixCode: string; onCheck: () => void; isChecking: boo
             </button>
           </div>
         </div>
-
         <div className="space-y-3 pt-1 relative z-10">
-          <button 
-            onClick={onCheck}
-            disabled={isChecking}
-            className="w-full py-3 bg-green-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] shadow-[0_4px_0_rgb(21,128,61)] animate-heartbeat active:translate-y-1 disabled:opacity-50"
-          >
+          <button onClick={onCheck} disabled={isChecking} className="w-full py-3 bg-green-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] shadow-[0_4px_0_rgb(21,128,61)] animate-heartbeat active:translate-y-1 disabled:opacity-50">
             {isChecking ? 'VERIFICANDO...' : 'JÁ PAGUEI ✅'}
           </button>
-          <button onClick={onClose} className="w-full py-1 text-zinc-600 font-black uppercase text-[8px] tracking-widest hover:text-white transition-colors">VOLTAR PARA O APP</button>
+          <button onClick={onClose} className="w-full py-1 text-zinc-600 font-black uppercase text-[8px] tracking-widest hover:text-white transition-colors">VOLTAR</button>
         </div>
       </div>
     </div>
@@ -235,12 +254,8 @@ const Onboarding: React.FC<{ onComplete: (n: string, p: string) => void }> = ({ 
   const [step, setStep] = useState(0);
   const [userName, setUserName] = useState('');
   const [partnerName, setPartnerName] = useState('');
-
-  const handleNext = () => setStep(prev => prev + 1);
-
   if (step === 0) return (
     <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 text-center overflow-hidden z-[300]">
-      <div className="absolute inset-0 animate-shimmer opacity-10 pointer-events-none"></div>
       <div className="relative z-10 space-y-12 animate-in fade-in duration-1000 max-w-sm w-full">
         <div className="space-y-4">
           <div className="w-24 h-24 border-4 border-yellow-500/50 rounded-full flex flex-col items-center justify-center mx-auto bg-black/60 shadow-[0_0_40px_rgba(251,191,36,0.3)] animate-pulse">
@@ -248,26 +263,16 @@ const Onboarding: React.FC<{ onComplete: (n: string, p: string) => void }> = ({ 
           </div>
           <h1 className="text-5xl font-black text-white italic tracking-tighter uppercase leading-none font-luxury">LUNA<br/><span className="text-yellow-500">SUTRA</span></h1>
         </div>
-        
         <div className="space-y-6">
-          <p className="text-zinc-400 text-xs font-medium uppercase tracking-[0.2em] leading-relaxed">
-            Bem-vindo ao Clímax do seu Relacionamento.<br/>
-            Uma experiência VIP desenhada para casais que buscam o extraordinário.
-          </p>
-          <button 
-            onClick={handleNext} 
-            className="w-full bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-600 text-black py-5 rounded-2xl text-lg font-black uppercase tracking-widest shadow-xl animate-heartbeat transition-all active:scale-95"
-          >
+          <p className="text-zinc-400 text-xs font-medium uppercase tracking-[0.2em] leading-relaxed">Bem-vindo ao Clímax do seu Relacionamento.<br/>Uma experiência VIP desenhada para casais que buscam o extraordinário.</p>
+          <button onClick={() => setStep(1)} className="w-full bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-600 text-black py-5 rounded-2xl text-lg font-black uppercase tracking-widest shadow-xl animate-heartbeat transition-all active:scale-95">
             ENTRAR NO CLUBE 🔒
           </button>
         </div>
       </div>
-      <div className="absolute bottom-10 text-[8px] text-zinc-600 font-black uppercase tracking-widest">
-        Luna Sutra &copy; 2025 | CNPJ 64.988.605/0001-15
-      </div>
+      <div className="absolute bottom-10 text-[8px] text-zinc-600 font-black uppercase tracking-widest">Luna Sutra &copy; 2025 | CNPJ 64.988.605/0001-15</div>
     </div>
   );
-
   return (
     <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 animate-in slide-in-from-right duration-500 z-[300]">
       <div className="w-full max-w-[300px] space-y-10">
@@ -276,29 +281,17 @@ const Onboarding: React.FC<{ onComplete: (n: string, p: string) => void }> = ({ 
           <p className="text-zinc-600 text-[8px] font-black uppercase tracking-widest">PERSONALIZAÇÃO DA EXPERIÊNCIA</p>
         </div>
         <div className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-zinc-500 text-[8px] font-black uppercase ml-2 tracking-widest">Seu Nome</label>
-            <input value={userName} onChange={e => setUserName(e.target.value)} className="w-full bg-[#0f1525] border-2 border-zinc-900 p-5 rounded-2xl text-white text-lg font-black uppercase outline-none focus:border-yellow-500/50 transition-all shadow-xl" placeholder="EX: MARCOS" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-zinc-500 text-[8px] font-black uppercase ml-2 tracking-widest">Nome do Par</label>
-            <input value={partnerName} onChange={e => setPartnerName(e.target.value)} className="w-full bg-[#0f1525] border-2 border-zinc-900 p-5 rounded-2xl text-white text-lg font-black uppercase outline-none focus:border-yellow-500/50 transition-all shadow-xl" placeholder="EX: JULIA" />
-          </div>
+          <input value={userName} onChange={e => setUserName(e.target.value)} className="w-full bg-[#0f1525] border-2 border-zinc-900 p-5 rounded-2xl text-white text-lg font-black uppercase outline-none focus:border-yellow-500/50 transition-all shadow-xl" placeholder="SEU NOME" />
+          <input value={partnerName} onChange={e => setPartnerName(e.target.value)} className="w-full bg-[#0f1525] border-2 border-zinc-900 p-5 rounded-2xl text-white text-lg font-black uppercase outline-none focus:border-yellow-500/50 transition-all shadow-xl" placeholder="NOME DO PAR" />
         </div>
-        <button 
-          disabled={!userName || !partnerName} 
-          onClick={() => onComplete(userName, partnerName)} 
-          className="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 py-5 rounded-2xl text-lg font-black uppercase text-black disabled:opacity-30 shadow-lg shadow-yellow-500/20 active:scale-95 transition-all"
-        >
-          COMEÇAR AGORA ✨
-        </button>
+        <button disabled={!userName || !partnerName} onClick={() => onComplete(userName, partnerName)} className="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 py-5 rounded-2xl text-lg font-black uppercase text-black disabled:opacity-30 shadow-lg active:scale-95 transition-all">COMEÇAR AGORA ✨</button>
       </div>
     </div>
   );
 };
 
 export default function App() {
-  const { state, updateProfile, addCompletion, unlockGame, useSpin, setVipStatus, getDaysUntilReset } = useGameStore();
+  const { state, updateProfile, addCompletion, unlockGame, useSpin, setVipStatus, getDaysUntilReset, completeTutorial } = useGameStore();
   const [activeTab, setActiveTab] = useState<'girar' | 'cards' | 'slot' | 'loja' | 'vip'>('girar');
   const [category, setCategory] = useState<Category>(Category.Warmup);
   const [activeMission, setActiveMission] = useState<any>(null);
@@ -307,8 +300,6 @@ export default function App() {
   const [pixCode, setPixCode] = useState<string | null>(null);
   const [paymentId, setPaymentId] = useState<string | null>(() => localStorage.getItem('luna_last_payment_id'));
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
-  const [showHearts, setShowHearts] = useState(false);
-  const [lastCoins, setLastCoins] = useState(state.coins);
 
   useEffect(() => {
     let interval: any;
@@ -317,33 +308,21 @@ export default function App() {
     return () => clearInterval(interval);
   }, [missionTimer]);
 
-  useEffect(() => {
-    if (state.coins > lastCoins) { setShowHearts(true); setTimeout(() => setShowHearts(false), 3000); }
-    setLastCoins(state.coins);
-  }, [state.coins]);
-
   const handleCreatePix = async () => {
     if (state.isVip) return;
     setIsGeneratingPix(true);
     setPixCode(null);
     try {
-      const response = await fetch('/api/create-pix', { 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
+      const response = await fetch('/api/create-pix', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
       const data = await response.json();
-      
       if (response.ok && data.pix_code) {
         setPixCode(data.pix_code);
         setPaymentId(data.payment_id);
         localStorage.setItem('luna_last_payment_id', data.payment_id);
       } else {
-        alert(data.details || data.message || 'O Mercado Pago recusou a transação. Tente novamente mais tarde.');
+        alert(data.details || data.message || 'Erro ao gerar Pix.');
       }
-    } catch (err) { 
-      console.error(err); 
-      alert('Serviço de pagamentos temporariamente indisponível. CNPJ: 64.988.605/0001-15'); 
-    }
+    } catch (err) { console.error(err); alert('Erro no servidor de pagamentos.'); }
     finally { setIsGeneratingPix(false); }
   };
 
@@ -353,13 +332,8 @@ export default function App() {
     try {
       const response = await fetch(`/api/check-payment?id=${paymentId}`);
       const data = await response.json();
-      if (data.isApproved) {
-        setVipStatus(true);
-        setPixCode(null);
-        localStorage.removeItem('luna_last_payment_id');
-      } else {
-        alert('Pagamento ainda não detectado. Se você já pagou via Pix, aguarde alguns instantes pela confirmação bancária.');
-      }
+      if (data.isApproved) { setVipStatus(true); setPixCode(null); localStorage.removeItem('luna_last_payment_id'); }
+      else { alert('Aguardando confirmação bancária...'); }
     } catch (err) { console.error(err); }
     finally { setIsCheckingPayment(false); }
   };
@@ -368,31 +342,115 @@ export default function App() {
 
   const closeMission = () => { setActiveMission(null); setMissionTimer(null); };
 
+  const showTutorial = (gameId: string) => !state.tutorialsCompleted.includes(gameId);
+
+  // Lógica unificada para o botão "INICIAR AGORA"
+  const handleStartMission = () => {
+    if (missionTimer !== null) {
+      if (missionTimer === 0) {
+        addCompletion(activeMission.id, activeMission.reward);
+        closeMission();
+      }
+      return;
+    }
+
+    if (!state.isVip) {
+      handleCreatePix();
+    } else {
+      setMissionTimer(activeMission.timer || 30);
+    }
+  };
+
   return (
     <ErrorBoundary>
       <div className="h-full w-full flex flex-col bg-black text-white overflow-hidden relative">
-        {showHearts && <HeartExplosion />}
         {pixCode && <PixModal pixCode={pixCode} onCheck={handleCheckPayment} isChecking={isCheckingPayment} onClose={() => setPixCode(null)} />}
         
         {isGeneratingPix && (
-          <div className="fixed inset-0 z-[400] bg-black/90 flex flex-col items-center justify-center space-y-4 backdrop-blur-md">
+          <div className="fixed inset-0 z-[1200] bg-black/90 flex flex-col items-center justify-center space-y-4 backdrop-blur-md">
             <div className="w-10 h-10 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
             <p className="text-yellow-500 font-black uppercase tracking-widest text-[8px] animate-pulse">Conectando ao Mercado Pago Seguro...</p>
           </div>
         )}
 
+        {/* SEQUÊNCIA DE TUTORIAIS LÓGICOS */}
+        {activeTab === 'girar' && (
+          showTutorial('roleta') ? (
+            <TutorialModal 
+              icon="🎰"
+              title="COMO JOGAR?"
+              subtitle="ROLETA LUNA"
+              steps={[
+                "Escolha a intensidade: Aquecimento, Ousadia ou Posição.",
+                "Clique em GIRAR para sortear um desafio.",
+                "Após o sorteio, clique em INICIAR AGORA.",
+                "Realize a missão por 35 segundos.",
+                "Somente após o tempo zerar, você poderá clicar em CONCLUÍDO e ganhar 20 moedas!"
+              ]}
+              onClose={() => completeTutorial('roleta')}
+            />
+          ) : showTutorial('dice') ? (
+            <TutorialModal 
+              icon="🎲"
+              title="COMO JOGAR?"
+              subtitle="DADO DA SURPRESA"
+              steps={[
+                "Um parceiro escreve um desejo oculto e um número de 1 a 6.",
+                "O outro parceiro tenta adivinhar o número secreto.",
+                "Se você acertar o número secreto do seu par, o desejo é revelado para ser cumprido na hora!"
+              ]}
+              onClose={() => completeTutorial('dice')}
+            />
+          ) : null
+        )}
+
+        {activeTab === 'cards' && showTutorial('cards') && (
+          <TutorialModal 
+            icon="🎴"
+            title="COMO JOGAR?"
+            subtitle="CARDS DA SORTE"
+            steps={[
+              "Toque em qualquer card para revelar uma missão.",
+              "Clique em INICIAR AGORA e realize a ação por 30 segundos.",
+              "Ao completar o tempo, clique em CONCLUÍDO para ganhar 10 moedas!"
+            ]}
+            onClose={() => completeTutorial('cards')}
+          />
+        )}
+
+        {activeTab === 'slot' && showTutorial('slot') && (
+          <TutorialModal 
+            icon="⚡"
+            title="COMO JOGAR?"
+            subtitle="SLOT PROIBIDO"
+            steps={[
+              "Puxe a alavanca para girar combinações eróticas.",
+              "Clique em INICIAR AGORA e realize a ação por 30 segundos.",
+              "Ganhe 10 moedas por cada rodada de sucesso!"
+            ]}
+            onClose={() => completeTutorial('slot')}
+          />
+        )}
+
         <header className="px-6 pt-10 pb-4 flex-shrink-0 z-10 border-b border-white/5 bg-black/60 backdrop-blur-xl">
+          <div className="w-full flex justify-between items-center mb-4 bg-zinc-900/50 p-2 rounded-full border border-white/5 shadow-inner">
+             <span className="text-[7px] font-black text-zinc-500 uppercase tracking-widest ml-2">CONEXÃO</span>
+             <div className="flex-1 mx-4 h-1.5 bg-black/50 rounded-full overflow-hidden">
+               <div className="h-full bg-yellow-500 w-[20%] transition-all duration-1000"></div>
+             </div>
+             <span className="text-[7px] font-black text-yellow-500 mr-2">0 / 5</span>
+          </div>
           <div className="flex justify-between items-start">
             <div className="space-y-0.5">
                <h1 className="text-[7px] font-black text-yellow-500 uppercase tracking-widest opacity-60 leading-none">LUNA SUTRA VIP</h1>
                <p className="text-xl font-black italic uppercase tracking-tighter leading-none font-luxury">{state.userName} & {state.partnerName}</p>
             </div>
             <div className="flex flex-col items-end space-y-1.5">
-              <div className={`bg-[#0f1525] px-3 py-1.5 rounded-xl border border-zinc-800 flex items-center space-x-1.5 shadow-xl transition-all ${showHearts ? 'animate-coin-pop' : ''}`}>
+              <div className="bg-[#0f1525] px-3 py-1.5 rounded-xl border border-zinc-800 flex items-center space-x-1.5 shadow-xl transition-transform active:scale-95">
                 <span className="text-lg font-black text-yellow-500">{state.coins}</span>
                 <span className="text-base">🪙</span>
               </div>
-              {state.isVip && <span className="text-[7px] font-black bg-yellow-500 text-black px-2.5 py-1 rounded-full uppercase tracking-widest animate-shimmer shadow-lg shadow-yellow-500/20">MEMBRO VIP</span>}
+              {state.isVip && <span className="text-[7px] font-black bg-yellow-500 text-black px-2.5 py-1 rounded-full uppercase tracking-widest animate-shimmer shadow-lg">MEMBRO VIP</span>}
             </div>
           </div>
         </header>
@@ -406,13 +464,15 @@ export default function App() {
                 ))}
               </div>
               <Wheel category={category} history={state.history} onComplete={(item) => setActiveMission({...item, reward: 20, timer: 35})} spinsRemaining={state.spins.wheel} isVip={state.isVip} onSpinUsed={() => useSpin('wheel')} onCheckout={handleCreatePix} daysUntilReset={getDaysUntilReset()} />
-              <DiceGame spinsRemaining={state.spins.dice} isVip={state.isVip} useSpin={() => useSpin('dice')} onCheckout={handleCreatePix} onComplete={(reward) => addCompletion('dice-turn-' + Date.now(), reward)} daysUntilReset={getDaysUntilReset()} />
+              <div className="w-full border-t border-white/5 pt-6 mt-6">
+                <DiceGame spinsRemaining={state.spins.dice} isVip={state.isVip} useSpin={() => useSpin('dice')} onCheckout={handleCreatePix} onComplete={(reward) => addCompletion('dice-turn-' + Date.now(), reward)} daysUntilReset={getDaysUntilReset()} />
+              </div>
             </div>
           )}
 
-          {activeTab === 'cards' && <div className="max-w-[340px] mx-auto py-2"><CardsGame onComplete={(item) => setActiveMission({...item, reward: 10, timer: 30})} spinsRemaining={state.spins.cards} isVip={state.isVip} useSpin={() => useSpin('cards')} onCheckout={handleCreatePix} daysUntilReset={getDaysUntilReset()} /></div>}
+          {activeTab === 'cards' && <div className="max-w-[340px] mx-auto py-2"><CardsGame onComplete={(item) => setActiveMission({...item, reward: 10, timer: 30})} spinsRemaining={state.spins.cards} isVip={state.isVip} useSpin={useSpin} onCheckout={handleCreatePix} daysUntilReset={getDaysUntilReset()} /></div>}
           
-          {activeTab === 'slot' && <div className="max-w-[340px] mx-auto py-2"><SlotGame onComplete={(item) => setActiveMission({...item, reward: 10, timer: 30})} spinsRemaining={state.spins.slots} isVip={state.isVip} useSpin={() => useSpin('slots')} onCheckout={handleCreatePix} /></div>}
+          {activeTab === 'slot' && <div className="max-w-[340px] mx-auto py-2"><SlotGame onComplete={(item) => setActiveMission({...item, reward: 10, timer: 30})} spinsRemaining={state.spins.slots} isVip={state.isVip} useSpin={useSpin} onCheckout={handleCreatePix} /></div>}
           
           {activeTab === 'loja' && <div className="max-w-[340px] mx-auto"><Store state={state} onUnlock={unlockGame} /></div>}
           
@@ -432,7 +492,7 @@ export default function App() {
                     </div>
                     <div className="space-y-2">
                        <h3 className="text-white font-black uppercase tracking-widest text-sm italic">STATUS PREMIUM ATIVO</h3>
-                       <p className="text-zinc-500 text-[10px] font-bold">CNPJ 64.988.605/0001-15 | Conta Verificada</p>
+                       <p className="text-zinc-500 text-[10px] font-bold">CNPJ 64.988.605/0001-15 | Verificado</p>
                     </div>
                  </div>
                ) : (
@@ -453,7 +513,7 @@ export default function App() {
           )}
         </main>
 
-        <nav className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-2xl border-t border-white/5 px-4 py-4 flex justify-around items-center z-50 rounded-t-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.8)] pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        <nav className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-2xl border-t border-white/5 px-4 py-4 flex justify-around items-center z-50 rounded-t-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,1)] pb-[calc(1rem+env(safe-area-inset-bottom))]">
           {[
             { id: 'girar', label: 'LUNA', icon: '🎰' },
             { id: 'cards', label: 'CARDS', icon: '🎴' },
@@ -469,7 +529,7 @@ export default function App() {
         </nav>
 
         {activeMission && (
-          <div className="fixed inset-0 z-[250] bg-black/98 backdrop-blur-3xl flex items-center justify-center p-6 animate-in fade-in duration-500">
+          <div className="fixed inset-0 z-[1300] bg-black/98 backdrop-blur-3xl flex items-center justify-center p-6 animate-in fade-in duration-500">
              <div className="bg-[#0f1525] border-2 border-yellow-500/20 w-full max-w-[300px] rounded-[3rem] text-center p-8 space-y-6 relative shadow-[0_0_100px_rgba(251,191,36,0.15)]">
                 <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter leading-tight font-luxury">{activeMission.nome}</h2>
                 <div className="p-5 bg-black/60 rounded-[2rem] border border-zinc-900 shadow-inner">
@@ -477,7 +537,7 @@ export default function App() {
                 </div>
                 {missionTimer !== null && <div className="text-5xl font-black text-yellow-500 font-mono animate-pulse">00:{missionTimer < 10 ? `0${missionTimer}` : missionTimer}</div>}
                 <div className="flex flex-col space-y-4">
-                  <button onClick={() => { if (missionTimer === null) setMissionTimer(activeMission.timer || 30); else { addCompletion(activeMission.id, activeMission.reward); closeMission(); } }} disabled={missionTimer !== null && missionTimer > 0} className="w-full py-5 font-black rounded-2xl uppercase tracking-widest text-lg bg-yellow-500 text-black shadow-[0_6px_0_rgb(161,98,7)] animate-heartbeat disabled:opacity-50 active:scale-95 transition-all">
+                  <button onClick={handleStartMission} disabled={missionTimer !== null && missionTimer > 0} className="w-full py-5 font-black rounded-2xl uppercase tracking-widest text-lg bg-yellow-500 text-black shadow-[0_4px_0_rgb(161,98,7)] animate-glow-gold disabled:opacity-50 active:scale-95 transition-all">
                     {missionTimer === null ? 'INICIAR AGORA ⏳' : missionTimer === 0 ? `CONCLUÍDO! (+${activeMission.reward})` : 'AGUARDE...'}
                   </button>
                   <button onClick={closeMission} disabled={missionTimer !== null && missionTimer > 0} className="text-zinc-600 font-black uppercase text-[9px] tracking-widest hover:text-white transition-colors">✕ FECHAR</button>
