@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 
 interface DiceGameProps {
@@ -86,7 +85,7 @@ export const DiceGame: React.FC<DiceGameProps> = ({ spinsRemaining, isVip, useSp
                 {[1, 2, 3, 4, 5, 6].map(num => <option key={num} value={num}>{num}</option>)}
               </select>
             </div>
-            <button onClick={handleHideDesire} disabled={!wish.trim()} className="w-full py-4 bg-white text-black rounded-[1.5rem] font-black text-xs uppercase tracking-widest shadow-[0_4px_0_rgb(160,160,160)] active:translate-y-1 disabled:opacity-20">ESCONDER DESEJO 🤫</button>
+            <button onClick={handleHideDesire} disabled={!wish.trim()} className="w-full py-4 bg-white text-black rounded-[1.5rem] font-black text-xs uppercase tracking-widest shadow-[0_4px_0_rgb(160,160,160)] active:translate-y-1 disabled:opacity-20 animate-pulse">ESCONDER DESEJO 🤫</button>
           </div>
         )}
 

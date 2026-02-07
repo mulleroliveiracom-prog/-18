@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, ReactNode, ErrorInfo } from 'react';
 import { Category, GameItem } from './types';
 import { useGameStore } from './hooks/useGameStore';
@@ -11,13 +12,12 @@ interface ErrorBoundaryState { hasError: boolean; }
 
 /**
  * ErrorBoundary class component to catch rendering errors in its child components.
- * Fix: Use standard constructor pattern to ensure 'props' and 'state' are correctly recognized by TypeScript as members of the class.
+ * Fix: Use class property initialization for 'state' and ensure 'props' is correctly typed via generic inheritance.
+ * This resolves TypeScript errors where 'state' and 'props' were not recognized as members of the class.
  */
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false };
-  }
+  // Initialize state as a class property to ensure TypeScript recognition of instance members
+  state: ErrorBoundaryState = { hasError: false };
 
   static getDerivedStateFromError(_: Error): ErrorBoundaryState {
     return { hasError: true };
@@ -37,7 +37,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         </div>
       );
     }
-    // Correctly accessing children from this.props
+    // Correctly accessing children from this.props via React.Component inheritance
     return this.props.children;
   }
 }
@@ -203,7 +203,7 @@ const SlotGame: React.FC<{
           </div>
         ))}
       </div>
-      <button onClick={spin} disabled={isSpinning} className="w-full py-5 bg-gradient-to-br from-yellow-600 to-yellow-400 text-black rounded-2xl font-black uppercase tracking-widest text-sm shadow-[0_6px_0_rgb(161,98,7)] active:translate-y-1 transition-all animate-glow-gold">
+      <button onClick={spin} disabled={isSpinning} className="w-full py-5 bg-gradient-to-br from-yellow-600 to-yellow-400 text-black rounded-2xl font-black uppercase tracking-widest text-sm shadow-[0_6px_0_rgb(161,98,7)] active:translate-y-1 transition-all animate-glow-gold animate-heartbeat">
         {isSpinning ? 'COMBINANDO...' : 'GIRAR SLOT ⚡'}
       </button>
     </div>
@@ -286,7 +286,7 @@ const Onboarding: React.FC<{ onComplete: (n: string, p: string) => void }> = ({ 
           <input value={userName} onChange={e => setUserName(e.target.value)} className="w-full bg-[#0f1525] border-2 border-zinc-900 p-5 rounded-2xl text-white text-lg font-black uppercase outline-none focus:border-yellow-500/50 transition-all shadow-xl" placeholder="SEU NOME" />
           <input value={partnerName} onChange={e => setPartnerName(e.target.value)} className="w-full bg-[#0f1525] border-2 border-zinc-900 p-5 rounded-2xl text-white text-lg font-black uppercase outline-none focus:border-yellow-500/50 transition-all shadow-xl" placeholder="NOME DO PAR" />
         </div>
-        <button disabled={!userName || !partnerName} onClick={() => onComplete(userName, partnerName)} className="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 py-5 rounded-2xl text-lg font-black uppercase text-black disabled:opacity-30 shadow-lg active:scale-95 transition-all">COMEÇAR AGORA ✨</button>
+        <button disabled={!userName || !partnerName} onClick={() => onComplete(userName, partnerName)} className="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 py-5 rounded-2xl text-lg font-black uppercase text-black disabled:opacity-30 shadow-lg active:scale-95 transition-all animate-heartbeat animate-glow-gold">COMEÇAR AGORA ✨</button>
       </div>
     </div>
   );
@@ -539,7 +539,7 @@ export default function App() {
                 </div>
                 {missionTimer !== null && <div className="text-5xl font-black text-yellow-500 font-mono animate-pulse">00:{missionTimer < 10 ? `0${missionTimer}` : missionTimer}</div>}
                 <div className="flex flex-col space-y-4">
-                  <button onClick={handleStartMission} disabled={missionTimer !== null && missionTimer > 0} className="w-full py-5 font-black rounded-2xl uppercase tracking-widest text-lg bg-yellow-500 text-black shadow-[0_4px_0_rgb(161,98,7)] animate-glow-gold disabled:opacity-50 active:scale-95 transition-all">
+                  <button onClick={handleStartMission} disabled={missionTimer !== null && missionTimer > 0} className="w-full py-5 font-black rounded-2xl uppercase tracking-widest text-lg bg-yellow-500 text-black shadow-[0_4px_0_rgb(161,98,7)] animate-glow-gold animate-heartbeat disabled:opacity-50 active:scale-95 transition-all">
                     {missionTimer === null ? 'INICIAR AGORA ⏳' : missionTimer === 0 ? `CONCLUÍDO! (+${activeMission.reward})` : 'AGUARDE...'}
                   </button>
                   <button onClick={closeMission} disabled={missionTimer !== null && missionTimer > 0} className="text-zinc-600 font-black uppercase text-[9px] tracking-widest hover:text-white transition-colors">✕ FECHAR</button>
