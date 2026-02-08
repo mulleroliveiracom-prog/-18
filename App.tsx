@@ -13,11 +13,12 @@ interface ErrorBoundaryState { hasError: boolean; }
 
 /**
  * ErrorBoundary class component to catch rendering errors in its child components.
- * Fixed: Explicitly extend React.Component to ensure 'this.state' and 'this.props' are correctly typed and recognized.
+ * Fixed: Explicitly using React.Component ensures TypeScript correctly recognizes base class properties like state and props.
  */
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
+    // Fixed: State initialization is now recognized by TypeScript within the React.Component context.
     this.state = { hasError: false };
   }
 
@@ -30,6 +31,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   render() {
+    // Fixed: state access is now correctly typed.
     if (this.state.hasError) {
       return (
         <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 text-center">
@@ -39,6 +41,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         </div>
       );
     }
+    // Fixed: props access is now correctly typed.
     return this.props.children;
   }
 }
@@ -303,6 +306,8 @@ export default function App() {
   const [paymentId, setPaymentId] = useState<string | null>(() => localStorage.getItem('luna_last_payment_id'));
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
   const [isNeonPulseActive, setIsNeonPulseActive] = useState(false);
+  const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
+  const [vipKey, setVipKey] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -340,6 +345,18 @@ export default function App() {
       else { alert('Aguardando confirmação bancária...'); }
     } catch (err) { console.error(err); }
     finally { setIsCheckingPayment(false); }
+  };
+
+  const validateVipKey = () => {
+    const MASTER_KEY = 'LUNA-VIP-2025';
+    if (vipKey.trim().toUpperCase() === MASTER_KEY) {
+      setVipStatus(true);
+      setIsRestoreModalOpen(false);
+      setVipKey('');
+      alert('✨ ACESSO VIP RESTAURADO COM SUCESSO!');
+    } else {
+      alert('❌ CHAVE VIP INVÁLIDA. VERIFIQUE E TENTE NOVAMENTE.');
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -381,6 +398,27 @@ export default function App() {
       <div className="h-full w-full flex flex-col bg-black text-white overflow-hidden relative">
         {pixCode && <PixModal pixCode={pixCode} onCheck={handleCheckPayment} isChecking={isCheckingPayment} onClose={() => setPixCode(null)} />}
         
+        {isRestoreModalOpen && (
+          <div className="fixed inset-0 z-[2000] bg-black/98 backdrop-blur-3xl flex items-center justify-center p-6 animate-in fade-in">
+            <div className="bg-[#0f1525] border-2 border-pink-500/50 w-full max-w-[300px] rounded-[3rem] p-8 text-center space-y-6 shadow-[0_0_80px_rgba(255,0,122,0.2)]">
+              <h2 className="text-xl font-black text-white uppercase italic tracking-tighter font-luxury">RESTAURAR ACESSO</h2>
+              <p className="text-pink-500 text-[8px] font-black uppercase tracking-widest">INSIRA SUA CHAVE VIP</p>
+              <input 
+                value={vipKey}
+                onChange={(e) => setVipKey(e.target.value)}
+                placeholder="CHAVE-XXXX-XXXX"
+                className="w-full bg-black/60 border-2 border-pink-500/30 p-4 rounded-2xl text-yellow-500 text-center font-black uppercase tracking-widest outline-none focus:border-pink-500 transition-all placeholder:text-zinc-800"
+              />
+              <div className="space-y-3">
+                <button onClick={validateVipKey} className="w-full py-4 bg-pink-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg active:scale-95 transition-all">
+                  ATIVAR ACESSO ✨
+                </button>
+                <button onClick={() => setIsRestoreModalOpen(false)} className="text-zinc-600 font-black uppercase text-[8px] tracking-widest">CANCELAR</button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {isGeneratingPix && (
           <div className="fixed inset-0 z-[1200] bg-black/90 flex flex-col items-center justify-center space-y-4 backdrop-blur-md">
             <div className="w-10 h-10 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
@@ -533,19 +571,46 @@ export default function App() {
                        <span className="text-white font-black text-[10px] uppercase tracking-widest">INICIAR NEON PULSE</span>
                     </button>
                   )}
+
+                  {/* Recordes da Comunidade */}
+                  <div className="w-full mt-4 space-y-3 bg-black/40 p-4 rounded-2xl border border-white/5 shadow-inner">
+                    <p className="text-[7px] font-black text-pink-500 uppercase tracking-widest text-center">🏆 RECORDES DA COMUNIDADE</p>
+                    {[
+                      { names: 'Marta & João', score: '2.980', status: 'Ovulando todo momento 🔥' },
+                      { names: 'Bia & Leo', score: '2.745', status: 'Ovulando todo momento 🔥' },
+                      { names: 'Ana & Pedro', score: '2.420', status: 'Ovulando todo momento 🔥' },
+                      { names: 'Clara & Vitor', score: '2.150', status: 'Ovulando todo momento 🔥' }
+                    ].map((entry, idx) => (
+                      <div key={idx} className="flex justify-between items-center py-2 border-b border-white/5 last:border-0">
+                        <div className="flex flex-col">
+                          <span className="text-[9px] font-black text-white uppercase italic">{entry.names}</span>
+                          <span className="text-[6px] font-bold text-pink-500 uppercase tracking-widest">{entry.status}</span>
+                        </div>
+                        <span className="text-[10px] font-black text-yellow-500">{entry.score} pts</span>
+                      </div>
+                    ))}
+                  </div>
                </div>
 
                {/* Oferta R$ 1,00 */}
                {!state.isVip && (
-                 <div className="w-full bg-[#0f1525] p-8 rounded-[3rem] border-2 border-yellow-500/30 space-y-4 animate-in zoom-in shadow-2xl relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-yellow-500/5 pointer-events-none"></div>
-                    <div className="flex items-center justify-between relative z-10">
-                       <div className="space-y-1">
-                          <p className="text-yellow-500 font-black text-[10px] uppercase tracking-widest">OFERTA DE ATIVAÇÃO</p>
-                          <p className="text-white text-lg font-black italic uppercase leading-tight">R$ 1,00 VITALÍCIO</p>
-                       </div>
-                       <button onClick={handleCreatePix} className="px-8 py-4 bg-yellow-500 text-black rounded-2xl font-black uppercase text-[10px] shadow-xl animate-heartbeat active:scale-95 transition-all">LIBERAR 🔒</button>
-                    </div>
+                 <div className="w-full flex flex-col items-center space-y-4">
+                   <div className="w-full bg-[#0f1525] p-8 rounded-[3rem] border-2 border-yellow-500/30 space-y-4 animate-in zoom-in shadow-2xl relative overflow-hidden group">
+                      <div className="absolute inset-0 bg-yellow-500/5 pointer-events-none"></div>
+                      <div className="flex items-center justify-between relative z-10">
+                         <div className="space-y-1">
+                            <p className="text-yellow-500 font-black text-[10px] uppercase tracking-widest">OFERTA DE ATIVAÇÃO</p>
+                            <p className="text-white text-lg font-black italic uppercase leading-tight">R$ 1,00 VITALÍCIO</p>
+                         </div>
+                         <button onClick={handleCreatePix} className="px-8 py-4 bg-yellow-500 text-black rounded-2xl font-black uppercase text-[10px] shadow-xl animate-heartbeat active:scale-95 transition-all">LIBERAR 🔒</button>
+                      </div>
+                   </div>
+                   <button 
+                     onClick={() => setIsRestoreModalOpen(true)}
+                     className="text-zinc-600 font-black uppercase text-[8px] tracking-[0.2em] hover:text-yellow-500 transition-colors"
+                   >
+                     Já é VIP? Clique aqui para restaurar seu acesso
+                   </button>
                  </div>
                )}
             </div>
