@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, ReactNode, ErrorInfo, useRef } from 'react';
+import React, { useState, useEffect, ReactNode, ErrorInfo, useRef, Component } from 'react';
 import { Category, GameItem } from './types';
 import { useGameStore } from './hooks/useGameStore';
 import { Wheel } from './components/Wheel';
@@ -13,14 +13,11 @@ interface ErrorBoundaryState { hasError: boolean; }
 
 /**
  * ErrorBoundary class component to catch rendering errors in its child components.
- * Fixed: Explicitly using React.Component ensures TypeScript correctly recognizes base class properties like state and props.
+ * Fix: Changed to extend React.Component and use class property for state initialization to resolve TS errors.
  */
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    // Fixed: State initialization is now recognized by TypeScript within the React.Component context.
-    this.state = { hasError: false };
-  }
+  // Use class property initialization to ensure 'state' is recognized by TypeScript and avoid constructor errors.
+  state: ErrorBoundaryState = { hasError: false };
 
   static getDerivedStateFromError(_: Error): ErrorBoundaryState {
     return { hasError: true };
@@ -31,7 +28,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   render() {
-    // Fixed: state access is now correctly typed.
+    // Correctly accessing 'state' which is inherited from React.Component.
     if (this.state.hasError) {
       return (
         <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 text-center">
@@ -41,7 +38,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         </div>
       );
     }
-    // Fixed: props access is now correctly typed.
+    // Correctly accessing 'props' which is inherited from React.Component.
     return this.props.children;
   }
 }
@@ -120,7 +117,7 @@ const CardsGame: React.FC<{
     <div className="bg-[#0f1525] border-2 border-red-500/20 p-8 rounded-[3rem] text-center space-y-4 animate-in zoom-in shadow-2xl mt-10">
       <div className="text-4xl">🎴</div>
       <p className="text-white text-[10px] font-black uppercase italic leading-tight">CARTAS ESGOTADAS! NOVOS GIROS EM {daysUntilReset} DIAS.</p>
-      <button onClick={onCheckout} className="w-full py-4 bg-yellow-500 text-black rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg animate-glow-gold">LIBERAR AGORA R$ 1,00 🚀</button>
+      <button onClick={onCheckout} className="w-full py-4 bg-yellow-500 text-black rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg animate-glow-gold">LIBERAR AGORA R$ 12,90 🚀</button>
     </div>
   );
 
@@ -193,7 +190,7 @@ const SlotGame: React.FC<{
     <div className="bg-[#0f1525] border-2 border-red-500/20 p-8 rounded-[3rem] text-center space-y-4 animate-in zoom-in shadow-2xl mt-10">
       <div className="text-4xl">🎰</div>
       <p className="text-white text-[10px] font-black uppercase italic leading-tight">SLOTS ESGOTADOS! LIBERE O ACESSO VIP VITALÍCIO.</p>
-      <button onClick={onCheckout} className="w-full py-4 bg-yellow-500 text-black rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg animate-glow-gold">LIBERAR AGORA R$ 1,00 🚀</button>
+      <button onClick={onCheckout} className="w-full py-4 bg-yellow-500 text-black rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg animate-glow-gold">LIBERAR AGORA R$ 12,90 🚀</button>
     </div>
   );
 
@@ -228,7 +225,7 @@ const PixModal: React.FC<{ pixCode: string; onCheck: () => void; isChecking: boo
         <div className="absolute top-0 left-0 w-full h-full animate-shimmer pointer-events-none opacity-10"></div>
         <div className="space-y-1 relative z-10">
           <h2 className="text-xl font-black text-white uppercase italic tracking-tighter font-luxury">ACESSO VITALÍCIO</h2>
-          <p className="text-yellow-500 text-[8px] font-black uppercase tracking-[0.3em]">LUNA SUTRA PREMIUM - R$ 1,00</p>
+          <p className="text-yellow-500 text-[8px] font-black uppercase tracking-[0.3em]">LUNA SUTRA PREMIUM - R$ 12,90</p>
         </div>
         <div className="space-y-2 relative z-10 flex flex-col items-center">
           <div className="bg-white p-2 rounded-xl inline-block shadow-lg">
@@ -592,7 +589,7 @@ export default function App() {
                   </div>
                </div>
 
-               {/* Oferta R$ 1,00 */}
+               {/* Oferta R$ 12,90 */}
                {!state.isVip && (
                  <div className="w-full flex flex-col items-center space-y-4">
                    <div className="w-full bg-[#0f1525] p-8 rounded-[3rem] border-2 border-yellow-500/30 space-y-4 animate-in zoom-in shadow-2xl relative overflow-hidden group">
@@ -600,7 +597,7 @@ export default function App() {
                       <div className="flex items-center justify-between relative z-10">
                          <div className="space-y-1">
                             <p className="text-yellow-500 font-black text-[10px] uppercase tracking-widest">OFERTA DE ATIVAÇÃO</p>
-                            <p className="text-white text-lg font-black italic uppercase leading-tight">R$ 1,00 VITALÍCIO</p>
+                            <p className="text-white text-lg font-black italic uppercase leading-tight">R$ 12,90 VITALÍCIO</p>
                          </div>
                          <button onClick={handleCreatePix} className="px-8 py-4 bg-yellow-500 text-black rounded-2xl font-black uppercase text-[10px] shadow-xl animate-heartbeat active:scale-95 transition-all">LIBERAR 🔒</button>
                       </div>

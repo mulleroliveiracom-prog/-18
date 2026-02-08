@@ -1,4 +1,3 @@
-
 // Handler para criação de pagamento PIX no Mercado Pago
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -10,7 +9,7 @@ export default async function handler(req: any, res: any) {
 
   try {
     const paymentData = {
-      transaction_amount: 1.00,
+      transaction_amount: 12.90,
       // Descrição oficial que aparece no checkout e comprovante
       description: 'LUNA SUTRA VIP - ACESSO VITALÍCIO (CNPJ 64.988.605/0001-15)',
       // Texto que aparece no extrato bancário do cliente (Limitado a 13-15 caracteres)
