@@ -23,6 +23,8 @@ const INITIAL_STATE: UserState = {
   tutorialsCompleted: [],
   isVip: false,
   firstSpinDate: null,
+  dailyLives: 5,
+  lastLivesResetDate: null,
   spins: { ...INITIAL_SPINS }
 };
 
@@ -31,6 +33,14 @@ export function useGameStore() {
     const saved = localStorage.getItem(STORAGE_KEY);
     const parsed = saved ? JSON.parse(saved) : INITIAL_STATE;
     
+    const today = new Date().toDateString();
+
+    // Lógica de Renovação Diária de Vidas
+    if (parsed.lastLivesResetDate !== today) {
+      parsed.dailyLives = 5;
+      parsed.lastLivesResetDate = today;
+    }
+
     // Lógica de Renovação Semanal (7 dias)
     if (parsed.firstSpinDate) {
       const firstSpin = new Date(parsed.firstSpinDate).getTime();
@@ -67,6 +77,14 @@ export function useGameStore() {
       const firstDate = prev.firstSpinDate || new Date().toISOString();
       return { ...prev, spins: newSpins, firstSpinDate: firstDate };
     });
+    return true;
+  };
+
+  const consumeLife = () => {
+    if (state.isVip) return true;
+    if (state.dailyLives <= 0) return false;
+    
+    setState(prev => ({ ...prev, dailyLives: prev.dailyLives - 1 }));
     return true;
   };
 
@@ -111,5 +129,5 @@ export function useGameStore() {
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   };
 
-  return { state, updateProfile, updateProfileImage, addCompletion, unlockGame, completeTutorial, useSpin, setVipStatus, getDaysUntilReset };
+  return { state, updateProfile, updateProfileImage, addCompletion, unlockGame, completeTutorial, useSpin, consumeLife, setVipStatus, getDaysUntilReset };
 }

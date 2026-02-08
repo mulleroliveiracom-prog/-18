@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, ReactNode, ErrorInfo, useRef, Component } from 'react';
 import { Category, GameItem } from './types';
 import { useGameStore } from './hooks/useGameStore';
@@ -13,9 +12,9 @@ interface ErrorBoundaryState { hasError: boolean; }
 
 /**
  * ErrorBoundary class component to catch rendering errors in its child components.
- * Fix: Changed to extend React.Component and use class property for state initialization to resolve TS errors.
+ * Fix: Changed to extend Component directly and ensured state typing to resolve TS errors on line 41.
  */
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   // Use class property initialization to ensure 'state' is recognized by TypeScript and avoid constructor errors.
   state: ErrorBoundaryState = { hasError: false };
 
@@ -28,7 +27,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   render() {
-    // Correctly accessing 'state' which is inherited from React.Component.
+    // Correctly accessing 'state' which is inherited from Component.
     if (this.state.hasError) {
       return (
         <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 text-center">
@@ -38,7 +37,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         </div>
       );
     }
-    // Correctly accessing 'props' which is inherited from React.Component.
+    // Accessing 'props' from the Component base class.
     return this.props.children;
   }
 }
@@ -293,7 +292,7 @@ const Onboarding: React.FC<{ onComplete: (n: string, p: string) => void }> = ({ 
 };
 
 export default function App() {
-  const { state, updateProfile, updateProfileImage, addCompletion, unlockGame, useSpin, setVipStatus, getDaysUntilReset, completeTutorial } = useGameStore();
+  const { state, updateProfile, updateProfileImage, addCompletion, unlockGame, useSpin, consumeLife, setVipStatus, getDaysUntilReset, completeTutorial } = useGameStore();
   const [activeTab, setActiveTab] = useState<'girar' | 'cards' | 'slot' | 'loja' | 'vip'>('girar');
   const [category, setCategory] = useState<Category>(Category.Warmup);
   const [activeMission, setActiveMission] = useState<any>(null);
@@ -364,6 +363,17 @@ export default function App() {
         updateProfileImage(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const startNeonPulse = () => {
+    if (state.isVip) {
+      setIsNeonPulseActive(true);
+    } else if (state.dailyLives > 0) {
+      consumeLife();
+      setIsNeonPulseActive(true);
+    } else {
+      handleCreatePix();
     }
   };
 
@@ -560,13 +570,28 @@ export default function App() {
                       }} 
                     />
                   ) : (
-                    <button 
-                      onClick={() => setIsNeonPulseActive(true)} 
-                      className="w-full py-8 bg-gradient-to-r from-pink-600 to-pink-500 rounded-3xl flex flex-col items-center justify-center space-y-2 shadow-lg animate-heartbeat active:scale-95 transition-all"
-                    >
-                       <span className="text-4xl">⚡</span>
-                       <span className="text-white font-black text-[10px] uppercase tracking-widest">INICIAR NEON PULSE</span>
-                    </button>
+                    <div className="w-full space-y-4 flex flex-col items-center">
+                      {!state.isVip && (
+                        <div className="flex items-center space-x-2 bg-pink-500/10 px-4 py-2 rounded-full border border-pink-500/30">
+                          <span className="text-[9px] font-black text-pink-500 uppercase tracking-widest">Vidas hoje: {state.dailyLives}/5</span>
+                        </div>
+                      )}
+                      
+                      {(!state.isVip && state.dailyLives <= 0) ? (
+                        <div className="bg-[#0f1525] border-2 border-yellow-500/30 p-6 rounded-3xl text-center space-y-3 animate-in zoom-in">
+                          <p className="text-white text-[10px] font-black uppercase italic leading-tight">Suas 5 vidas diárias acabaram. Jogue sem limites e libere o Perfil do Casal sendo VIP!</p>
+                          <button onClick={handleCreatePix} className="w-full py-4 bg-yellow-500 text-black rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg animate-heartbeat">LIBERAR AGORA R$ 12,90 🚀</button>
+                        </div>
+                      ) : (
+                        <button 
+                          onClick={startNeonPulse} 
+                          className="w-full py-8 bg-gradient-to-r from-pink-600 to-pink-500 rounded-3xl flex flex-col items-center justify-center space-y-2 shadow-lg animate-heartbeat active:scale-95 transition-all"
+                        >
+                           <span className="text-4xl">⚡</span>
+                           <span className="text-white font-black text-[10px] uppercase tracking-widest">INICIAR NEON PULSE</span>
+                        </button>
+                      )}
+                    </div>
                   )}
 
                   {/* Recordes da Comunidade */}

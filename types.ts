@@ -26,6 +26,8 @@ export interface UserState {
   tutorialsCompleted: string[];
   isVip: boolean;
   firstSpinDate: string | null;
+  dailyLives: number;
+  lastLivesResetDate: string | null;
   spins: {
     wheel: number;
     cards: number;
