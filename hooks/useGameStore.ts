@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { UserState } from '../types';
 
@@ -14,6 +13,7 @@ const INITIAL_SPINS = {
 const INITIAL_STATE: UserState = {
   userName: '',
   partnerName: '',
+  profileImage: undefined,
   coins: 0,
   completedPositions: 0,
   history: [],
@@ -52,6 +52,10 @@ export function useGameStore() {
 
   const updateProfile = (userName: string, partnerName: string) => {
     setState(prev => ({ ...prev, userName, partnerName, isOnboarded: true, ageVerified: true }));
+  };
+
+  const updateProfileImage = (image: string) => {
+    setState(prev => ({ ...prev, profileImage: image }));
   };
 
   const useSpin = (type: keyof UserState['spins']) => {
@@ -107,5 +111,5 @@ export function useGameStore() {
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   };
 
-  return { state, updateProfile, addCompletion, unlockGame, completeTutorial, useSpin, setVipStatus, getDaysUntilReset };
+  return { state, updateProfile, updateProfileImage, addCompletion, unlockGame, completeTutorial, useSpin, setVipStatus, getDaysUntilReset };
 }

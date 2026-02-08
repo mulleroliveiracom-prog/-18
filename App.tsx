@@ -1,10 +1,11 @@
 
-import React, { useState, useEffect, ReactNode, ErrorInfo } from 'react';
+import React, { useState, useEffect, ReactNode, ErrorInfo, useRef } from 'react';
 import { Category, GameItem } from './types';
 import { useGameStore } from './hooks/useGameStore';
 import { Wheel } from './components/Wheel';
 import { Store } from './components/Store';
 import { DiceGame } from './components/DiceGame';
+import { NeonPulseGame } from './components/NeonPulseGame';
 import { cardChallenges, slotActions, slotTargets, slotIntensities } from './data/content';
 
 interface ErrorBoundaryProps { children?: ReactNode; }
@@ -12,12 +13,13 @@ interface ErrorBoundaryState { hasError: boolean; }
 
 /**
  * ErrorBoundary class component to catch rendering errors in its child components.
- * Fix: Use class property initialization for 'state' and ensure 'props' is correctly typed via generic inheritance.
- * This resolves TypeScript errors where 'state' and 'props' were not recognized as members of the class.
+ * Fixed: Explicitly extend React.Component to ensure 'this.state' and 'this.props' are correctly typed and recognized.
  */
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  // Initialize state as a class property to ensure TypeScript recognition of instance members
-  state: ErrorBoundaryState = { hasError: false };
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
   static getDerivedStateFromError(_: Error): ErrorBoundaryState {
     return { hasError: true };
@@ -37,7 +39,6 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         </div>
       );
     }
-    // Correctly accessing children from this.props via React.Component inheritance
     return this.props.children;
   }
 }
@@ -97,7 +98,6 @@ const CardsGame: React.FC<{
       setRevealingIndex(null);
       setRevealedContent({ index, text: randomChallenge });
       
-      // Pequeno delay para o usuário ver a carta virada antes do modal abrir
       setTimeout(() => {
         onComplete({
           id: 'card-' + Date.now(),
@@ -293,7 +293,7 @@ const Onboarding: React.FC<{ onComplete: (n: string, p: string) => void }> = ({ 
 };
 
 export default function App() {
-  const { state, updateProfile, addCompletion, unlockGame, useSpin, setVipStatus, getDaysUntilReset, completeTutorial } = useGameStore();
+  const { state, updateProfile, updateProfileImage, addCompletion, unlockGame, useSpin, setVipStatus, getDaysUntilReset, completeTutorial } = useGameStore();
   const [activeTab, setActiveTab] = useState<'girar' | 'cards' | 'slot' | 'loja' | 'vip'>('girar');
   const [category, setCategory] = useState<Category>(Category.Warmup);
   const [activeMission, setActiveMission] = useState<any>(null);
@@ -302,6 +302,8 @@ export default function App() {
   const [pixCode, setPixCode] = useState<string | null>(null);
   const [paymentId, setPaymentId] = useState<string | null>(() => localStorage.getItem('luna_last_payment_id'));
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
+  const [isNeonPulseActive, setIsNeonPulseActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let interval: any;
@@ -340,13 +342,23 @@ export default function App() {
     finally { setIsCheckingPayment(false); }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updateProfileImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   if (!state.isOnboarded) return <ErrorBoundary><Onboarding onComplete={updateProfile} /></ErrorBoundary>;
 
   const closeMission = () => { setActiveMission(null); setMissionTimer(null); };
 
   const showTutorial = (gameId: string) => !state.tutorialsCompleted.includes(gameId);
 
-  // Lógica unificada para o botão "INICIAR AGORA"
   const handleStartMission = () => {
     if (missionTimer !== null) {
       if (missionTimer === 0) {
@@ -355,13 +367,14 @@ export default function App() {
       }
       return;
     }
-
     if (!state.isVip) {
       handleCreatePix();
     } else {
       setMissionTimer(activeMission.timer || 30);
     }
   };
+
+  const levelProgress = Math.min((state.completedPositions / 50) * 100, 100);
 
   return (
     <ErrorBoundary>
@@ -406,41 +419,13 @@ export default function App() {
           ) : null
         )}
 
-        {activeTab === 'cards' && showTutorial('cards') && (
-          <TutorialModal 
-            icon="🎴"
-            title="COMO JOGAR?"
-            subtitle="CARDS DA SORTE"
-            steps={[
-              "Toque em qualquer card para revelar uma missão.",
-              "Clique em INICIAR AGORA e realize a ação por 30 segundos.",
-              "Ao completar o tempo, clique em CONCLUÍDO para ganhar 10 moedas!"
-            ]}
-            onClose={() => completeTutorial('cards')}
-          />
-        )}
-
-        {activeTab === 'slot' && showTutorial('slot') && (
-          <TutorialModal 
-            icon="⚡"
-            title="COMO JOGAR?"
-            subtitle="SLOT PROIBIDO"
-            steps={[
-              "Puxe a alavanca para girar combinações eróticas.",
-              "Clique em INICIAR AGORA e realize a ação por 30 segundos.",
-              "Ganhe 10 moedas por cada rodada de sucesso!"
-            ]}
-            onClose={() => completeTutorial('slot')}
-          />
-        )}
-
         <header className="px-6 pt-10 pb-4 flex-shrink-0 z-10 border-b border-white/5 bg-black/60 backdrop-blur-xl">
           <div className="w-full flex justify-between items-center mb-4 bg-zinc-900/50 p-2 rounded-full border border-white/5 shadow-inner">
              <span className="text-[7px] font-black text-zinc-500 uppercase tracking-widest ml-2">CONEXÃO</span>
              <div className="flex-1 mx-4 h-1.5 bg-black/50 rounded-full overflow-hidden">
-               <div className="h-full bg-yellow-500 w-[20%] transition-all duration-1000"></div>
+               <div className="h-full bg-yellow-500 transition-all duration-1000" style={{ width: `${levelProgress}%` }}></div>
              </div>
-             <span className="text-[7px] font-black text-yellow-500 mr-2">0 / 5</span>
+             <span className="text-[7px] font-black text-yellow-500 mr-2">{state.completedPositions} / 50</span>
           </div>
           <div className="flex justify-between items-start">
             <div className="space-y-0.5">
@@ -479,35 +464,87 @@ export default function App() {
           {activeTab === 'loja' && <div className="max-w-[340px] mx-auto"><Store state={state} onUnlock={unlockGame} /></div>}
           
           {activeTab === 'vip' && (
-            <div className="px-4 py-8 space-y-8 text-center max-w-[300px] mx-auto animate-in slide-in-from-bottom">
-               {state.isVip ? (
-                 <div className="space-y-6">
-                    <div className="relative bg-gradient-to-br from-yellow-600 via-yellow-400 to-yellow-600 p-8 rounded-[3rem] shadow-[0_0_40px_rgba(251,191,36,0.3)] border-2 border-white/20">
-                      <div className="absolute top-4 right-6 text-black/20 text-4xl font-black italic">VIP</div>
-                      <div className="text-left space-y-4">
-                        <div className="w-10 h-10 bg-black/10 rounded-full flex items-center justify-center text-xl">🏆</div>
-                        <div className="space-y-0.5">
-                          <p className="text-black/60 text-[8px] font-black uppercase tracking-widest">MEMBRO VITALÍCIO</p>
-                          <p className="text-black text-lg font-black italic uppercase leading-tight font-luxury">{state.userName} & {state.partnerName}</p>
+            <div className="py-8 space-y-8 max-w-[340px] mx-auto animate-in slide-in-from-bottom flex flex-col items-center">
+               {/* --- CARD DE PERFIL NEON --- */}
+               <div className="w-full relative bg-gradient-to-br from-[#FF007A] via-purple-600 to-yellow-500 p-[2px] rounded-[3.5rem] shadow-[0_20px_50px_rgba(255,0,122,0.2)]">
+                  <div className="bg-[#0f1525] rounded-[3.4rem] p-10 flex flex-col items-center space-y-6 overflow-hidden relative">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF007A]/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                    
+                    {/* Círculo da Foto */}
+                    <div 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-28 h-28 rounded-full border-4 border-[#FFD700] p-1 bg-black shadow-[0_0_30px_rgba(255,215,0,0.3)] relative group cursor-pointer overflow-hidden transition-all hover:scale-105 active:scale-95"
+                    >
+                      {state.profileImage ? (
+                        <img src={state.profileImage} className="w-full h-full object-cover rounded-full" alt="Foto do Casal" />
+                      ) : (
+                        <div className="w-full h-full rounded-full flex items-center justify-center text-zinc-700 bg-zinc-900 group-hover:text-yellow-500 transition-colors">
+                          <span className="text-4xl">📸</span>
                         </div>
-                      </div>
+                      )}
+                      <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
                     </div>
-                    <div className="space-y-2">
-                       <h3 className="text-white font-black uppercase tracking-widest text-sm italic">STATUS PREMIUM ATIVO</h3>
-                       <p className="text-zinc-500 text-[10px] font-bold">CNPJ 64.988.605/0001-15 | Verificado</p>
+
+                    <div className="text-center">
+                       <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter leading-tight font-luxury">
+                          {state.userName}<br/><span className="text-zinc-500 text-sm">&</span> {state.partnerName}
+                       </h2>
+                       <p className="mt-2 text-[8px] font-black text-yellow-500 uppercase tracking-[0.4em]">CASAL LUNA SUTRA</p>
                     </div>
-                 </div>
-               ) : (
-                 <div className="space-y-6">
-                    <div className="text-6xl animate-bounce">🏆</div>
-                    <h2 className="text-3xl font-black text-yellow-500 uppercase italic tracking-tighter font-luxury">Área VIP Luna</h2>
-                    <div className="bg-[#0f1525] p-8 rounded-[2.5rem] border-4 border-yellow-500/30 space-y-6 relative overflow-hidden shadow-2xl">
-                       <div className="space-y-2">
-                         <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest leading-tight">ATIVAÇÃO VITALÍCIA</p>
-                         <p className="text-zinc-500 text-[7px] font-black uppercase">CNPJ 64.988.605/0001-15</p>
+
+                    {/* Barra de XP */}
+                    <div className="w-full space-y-2">
+                       <div className="flex justify-between items-center text-[7px] font-black text-zinc-500 uppercase tracking-widest px-1">
+                          <span>NÍVEL VIP 1</span>
+                          <span className="text-yellow-500">EXPERIÊNCIA</span>
                        </div>
-                       <div className="text-white text-4xl font-black animate-pulse">R$ 1,00</div>
-                       <button onClick={handleCreatePix} className="w-full py-5 bg-yellow-500 text-black rounded-2xl font-black uppercase tracking-widest text-lg shadow-[0_6px_0_rgb(161,98,7)] animate-heartbeat animate-glow-gold active:scale-95 transition-all">LIBERAR TUDO 🔒</button>
+                       <div className="w-full h-4 bg-black/60 rounded-full border border-white/5 p-1 shadow-inner">
+                          <div className="h-full bg-gradient-to-r from-yellow-600 via-[#FFD700] to-yellow-600 rounded-full shadow-[0_0_15px_rgba(255,215,0,0.5)] transition-all duration-1000" style={{ width: `${levelProgress}%` }}></div>
+                       </div>
+                    </div>
+                  </div>
+               </div>
+
+               {/* Container do Jogo */}
+               <div className="w-full p-6 bg-[#0f1525] border-2 border-pink-500/20 rounded-[2.5rem] shadow-xl flex flex-col items-center space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-pulse"></span>
+                    <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">MINI-GAME DE ALTA DOPAMINA</span>
+                  </div>
+                  
+                  {isNeonPulseActive ? (
+                    <NeonPulseGame 
+                      userName={state.userName} 
+                      partnerName={state.partnerName} 
+                      onGameOver={(finalScore) => {
+                        if (finalScore >= 500) {
+                          alert("🎉 Conexão em Nível Máximo!");
+                          addCompletion('neon-pulse-master', 100);
+                        }
+                        setIsNeonPulseActive(false);
+                      }} 
+                    />
+                  ) : (
+                    <button 
+                      onClick={() => setIsNeonPulseActive(true)} 
+                      className="w-full py-8 bg-gradient-to-r from-pink-600 to-pink-500 rounded-3xl flex flex-col items-center justify-center space-y-2 shadow-lg animate-heartbeat active:scale-95 transition-all"
+                    >
+                       <span className="text-4xl">⚡</span>
+                       <span className="text-white font-black text-[10px] uppercase tracking-widest">INICIAR NEON PULSE</span>
+                    </button>
+                  )}
+               </div>
+
+               {/* Oferta R$ 1,00 */}
+               {!state.isVip && (
+                 <div className="w-full bg-[#0f1525] p-8 rounded-[3rem] border-2 border-yellow-500/30 space-y-4 animate-in zoom-in shadow-2xl relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-yellow-500/5 pointer-events-none"></div>
+                    <div className="flex items-center justify-between relative z-10">
+                       <div className="space-y-1">
+                          <p className="text-yellow-500 font-black text-[10px] uppercase tracking-widest">OFERTA DE ATIVAÇÃO</p>
+                          <p className="text-white text-lg font-black italic uppercase leading-tight">R$ 1,00 VITALÍCIO</p>
+                       </div>
+                       <button onClick={handleCreatePix} className="px-8 py-4 bg-yellow-500 text-black rounded-2xl font-black uppercase text-[10px] shadow-xl animate-heartbeat active:scale-95 transition-all">LIBERAR 🔒</button>
                     </div>
                  </div>
                )}
@@ -521,9 +558,9 @@ export default function App() {
             { id: 'cards', label: 'CARDS', icon: '🎴' },
             { id: 'slot', label: 'SLOT', icon: '⚡' },
             { id: 'loja', label: 'LOJA', icon: '👜' },
-            { id: 'vip', label: 'VIP', icon: '🏆' }
+            { id: 'vip', label: 'VIP', icon: '👤' }
           ].map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id as any)} className="flex flex-col items-center space-y-1 outline-none flex-1 group">
+            <button key={item.id} onClick={() => { setActiveTab(item.id as any); setIsNeonPulseActive(false); }} className="flex flex-col items-center space-y-1 outline-none flex-1 group">
               <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all duration-500 ${activeTab === item.id ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/30 -translate-y-2 scale-110' : 'text-zinc-600 opacity-60 group-hover:opacity-100'}`}>{item.icon}</div>
               <span className={`text-[7px] font-black tracking-widest transition-all ${activeTab === item.id ? 'text-yellow-500' : 'opacity-30'}`}>{item.label}</span>
             </button>

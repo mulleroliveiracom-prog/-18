@@ -1,4 +1,3 @@
-
 export enum Category {
   Warmup = 'Aquecimento',
   Daring = 'Ousadia',
@@ -17,6 +16,7 @@ export interface GameItem {
 export interface UserState {
   userName: string;
   partnerName: string;
+  profileImage?: string;
   coins: number;
   completedPositions: number;
   history: string[];
