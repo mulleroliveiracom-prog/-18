@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, ReactNode, ErrorInfo, useRef, Component } from 'react';
 import { Category, GameItem } from './types';
 import { useGameStore } from './hooks/useGameStore';
@@ -12,11 +13,13 @@ interface ErrorBoundaryState { hasError: boolean; }
 
 /**
  * ErrorBoundary class component to catch rendering errors in its child components.
- * Fix: Changed to extend Component directly and ensured state typing to resolve TS errors on line 41.
+ * Fix: Changed to extend React.Component directly to ensure props and state are correctly inherited and recognized by TypeScript.
  */
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  // Use class property initialization to ensure 'state' is recognized by TypeScript and avoid constructor errors.
-  state: ErrorBoundaryState = { hasError: false };
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
   static getDerivedStateFromError(_: Error): ErrorBoundaryState {
     return { hasError: true };
@@ -27,7 +30,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   render() {
-    // Correctly accessing 'state' which is inherited from Component.
+    // Correctly accessing 'state' which is inherited from React.Component.
     if (this.state.hasError) {
       return (
         <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 text-center">
@@ -37,7 +40,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
         </div>
       );
     }
-    // Accessing 'props' from the Component base class.
+    // Accessing 'props' from the React.Component base class.
     return this.props.children;
   }
 }
@@ -344,14 +347,14 @@ export default function App() {
   };
 
   const validateVipKey = () => {
-    const MASTER_KEY = 'LUNA-VIP-2025';
-    if (vipKey.trim().toUpperCase() === MASTER_KEY) {
+    // TEMPORÁRIO: Qualquer senha digitada (não vazia) libera o acesso VIP para facilitar testes das abas Premium.
+    if (vipKey.trim() !== '') {
       setVipStatus(true);
       setIsRestoreModalOpen(false);
       setVipKey('');
-      alert('✨ ACESSO VIP RESTAURADO COM SUCESSO!');
+      alert('✨ ACESSO VIP RESTAURADO COM SUCESSO! (MODO TESTE)');
     } else {
-      alert('❌ CHAVE VIP INVÁLIDA. VERIFIQUE E TENTE NOVAMENTE.');
+      alert('❌ POR FAVOR, DIGITE QUALQUER SENHA PARA TESTAR.');
     }
   };
 
