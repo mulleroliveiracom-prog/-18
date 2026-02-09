@@ -22,6 +22,7 @@ const INITIAL_STATE: UserState = {
   ageVerified: false,
   tutorialsCompleted: [],
   isVip: false,
+  vipKey: null,
   firstSpinDate: null,
   dailyLives: 5,
   lastLivesResetDate: null,
@@ -116,8 +117,8 @@ export function useGameStore() {
     return false;
   };
 
-  const setVipStatus = (status: boolean) => {
-    setState(prev => ({ ...prev, isVip: status }));
+  const setVipStatus = (status: boolean, key: string | null = null) => {
+    setState(prev => ({ ...prev, isVip: status, vipKey: key || prev.vipKey }));
   };
 
   const getDaysUntilReset = () => {

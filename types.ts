@@ -25,6 +25,7 @@ export interface UserState {
   ageVerified: boolean;
   tutorialsCompleted: string[];
   isVip: boolean;
+  vipKey: string | null;
   firstSpinDate: string | null;
   dailyLives: number;
   lastLivesResetDate: string | null;

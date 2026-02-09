@@ -11,15 +11,9 @@ import { cardChallenges, slotActions, slotTargets, slotIntensities } from './dat
 interface ErrorBoundaryProps { children?: ReactNode; }
 interface ErrorBoundaryState { hasError: boolean; }
 
-/**
- * ErrorBoundary class component to catch rendering errors in its child components.
- * Fix: Changed to extend React.Component directly to ensure props and state are correctly inherited and recognized by TypeScript.
- */
+// Fix: Use React.Component explicitly to ensure 'props' is recognized as a member of the class.
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false };
-  }
+  state: ErrorBoundaryState = { hasError: false };
 
   static getDerivedStateFromError(_: Error): ErrorBoundaryState {
     return { hasError: true };
@@ -30,7 +24,6 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   render() {
-    // Correctly accessing 'state' which is inherited from React.Component.
     if (this.state.hasError) {
       return (
         <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 text-center">
@@ -40,7 +33,6 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         </div>
       );
     }
-    // Accessing 'props' from the React.Component base class.
     return this.props.children;
   }
 }
@@ -212,14 +204,34 @@ const SlotGame: React.FC<{
   );
 };
 
-const PixModal: React.FC<{ pixCode: string; onCheck: () => void; isChecking: boolean; onClose: () => void }> = ({ pixCode, onCheck, isChecking, onClose }) => {
+const PixModal: React.FC<{ pixCode: string; onCheck: () => void; isChecking: boolean; onClose: () => void; generatedKey: string | null }> = ({ pixCode, onCheck, isChecking, onClose, generatedKey }) => {
   const [copied, setCopied] = useState(false);
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(pixCode);
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(pixCode)}`;
+
+  if (generatedKey) {
+    return (
+      <div className="fixed inset-0 z-[1100] bg-black/98 backdrop-blur-2xl flex items-center justify-center p-4 animate-in fade-in duration-500">
+        <div className="bg-[#0f1525] border-2 border-green-500/50 w-full max-w-[320px] rounded-[3rem] p-8 text-center space-y-6 shadow-[0_0_50px_rgba(34,197,94,0.3)]">
+          <div className="text-5xl animate-bounce">✨</div>
+          <h2 className="text-xl font-black text-white uppercase italic tracking-tighter font-luxury">PAGAMENTO APROVADO!</h2>
+          <p className="text-zinc-400 text-[9px] font-black uppercase tracking-widest">VOCÊ AGORA É MEMBRO VIP VITALÍCIO. GUARDE SUA CHAVE:</p>
+          <div className="bg-black/60 border-2 border-yellow-500/30 p-4 rounded-2xl relative">
+            <span className="text-yellow-500 font-mono font-black text-lg tracking-widest">{generatedKey}</span>
+            <button onClick={() => copyToClipboard(generatedKey)} className={`absolute -bottom-2 -right-2 px-3 py-1.5 rounded-xl text-[8px] font-black uppercase transition-all shadow-lg ${copied ? 'bg-green-600 text-white' : 'bg-yellow-500 text-black'}`}>
+              {copied ? 'COPIADO' : 'COPIAR CHAVE'}
+            </button>
+          </div>
+          <p className="text-zinc-500 text-[7px] font-bold uppercase leading-relaxed">Use esta chave na tela "Restaurar Acesso" caso troque de aparelho ou limpe o histórico.</p>
+          <button onClick={onClose} className="w-full py-4 bg-green-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg active:scale-95 transition-all">COMEÇAR EXPERIÊNCIA ✨</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[1100] bg-black/98 backdrop-blur-2xl flex items-center justify-center p-4 animate-in fade-in duration-500">
@@ -238,7 +250,7 @@ const PixModal: React.FC<{ pixCode: string; onCheck: () => void; isChecking: boo
         <div className="space-y-2 relative z-10">
           <div className="relative group">
             <textarea readOnly value={pixCode} className="w-full bg-black/60 border border-zinc-800 p-2.5 rounded-lg text-[8px] text-zinc-500 font-mono h-12 resize-none outline-none overflow-hidden" />
-            <button onClick={copyToClipboard} className={`absolute bottom-1 right-1 px-2 py-1 rounded-md text-[7px] font-black uppercase transition-all ${copied ? 'bg-green-600 text-white' : 'bg-yellow-500 text-black'}`}>
+            <button onClick={() => copyToClipboard(pixCode)} className={`absolute bottom-1 right-1 px-2 py-1 rounded-md text-[7px] font-black uppercase transition-all ${copied ? 'bg-green-600 text-white' : 'bg-yellow-500 text-black'}`}>
               {copied ? 'COPIADO' : 'COPIAR PIX'}
             </button>
           </div>
@@ -294,6 +306,13 @@ const Onboarding: React.FC<{ onComplete: (n: string, p: string) => void }> = ({ 
   );
 };
 
+const generateVipKey = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const part1 = Array.from({length: 4}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  const part2 = Array.from({length: 4}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  return `LUNA-${part1}-${part2}`;
+};
+
 export default function App() {
   const { state, updateProfile, updateProfileImage, addCompletion, unlockGame, useSpin, consumeLife, setVipStatus, getDaysUntilReset, completeTutorial } = useGameStore();
   const [activeTab, setActiveTab] = useState<'girar' | 'cards' | 'slot' | 'loja' | 'vip'>('girar');
@@ -302,6 +321,7 @@ export default function App() {
   const [missionTimer, setMissionTimer] = useState<number | null>(null);
   const [isGeneratingPix, setIsGeneratingPix] = useState(false);
   const [pixCode, setPixCode] = useState<string | null>(null);
+  const [successKey, setSuccessKey] = useState<string | null>(null);
   const [paymentId, setPaymentId] = useState<string | null>(() => localStorage.getItem('luna_last_payment_id'));
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
   const [isNeonPulseActive, setIsNeonPulseActive] = useState(false);
@@ -340,21 +360,28 @@ export default function App() {
     try {
       const response = await fetch(`/api/check-payment?id=${paymentId}`);
       const data = await response.json();
-      if (data.isApproved) { setVipStatus(true); setPixCode(null); localStorage.removeItem('luna_last_payment_id'); }
-      else { alert('Aguardando confirmação bancária...'); }
+      if (data.isApproved) {
+        const newKey = generateVipKey();
+        setVipStatus(true, newKey);
+        setSuccessKey(newKey);
+        localStorage.removeItem('luna_last_payment_id');
+      } else {
+        alert('Aguardando confirmação bancária...');
+      }
     } catch (err) { console.error(err); }
     finally { setIsCheckingPayment(false); }
   };
 
   const validateVipKey = () => {
-    // TEMPORÁRIO: Qualquer senha digitada (não vazia) libera o acesso VIP para facilitar testes das abas Premium.
-    if (vipKey.trim() !== '') {
+    const MASTER_KEY = 'LUNA-VIP-2025';
+    const entered = vipKey.trim().toUpperCase();
+    if (entered === MASTER_KEY || (state.vipKey && entered === state.vipKey.toUpperCase())) {
       setVipStatus(true);
       setIsRestoreModalOpen(false);
       setVipKey('');
-      alert('✨ ACESSO VIP RESTAURADO COM SUCESSO! (MODO TESTE)');
+      alert('✨ ACESSO VIP RESTAURADO COM SUCESSO!');
     } else {
-      alert('❌ POR FAVOR, DIGITE QUALQUER SENHA PARA TESTAR.');
+      alert('❌ CHAVE VIP INVÁLIDA. VERIFIQUE E TENTE NOVAMENTE.');
     }
   };
 
@@ -406,7 +433,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <div className="h-full w-full flex flex-col bg-black text-white overflow-hidden relative">
-        {pixCode && <PixModal pixCode={pixCode} onCheck={handleCheckPayment} isChecking={isCheckingPayment} onClose={() => setPixCode(null)} />}
+        {(pixCode || successKey) && <PixModal pixCode={pixCode || ''} generatedKey={successKey} onCheck={handleCheckPayment} isChecking={isCheckingPayment} onClose={() => { setPixCode(null); setSuccessKey(null); }} />}
         
         {isRestoreModalOpen && (
           <div className="fixed inset-0 z-[2000] bg-black/98 backdrop-blur-3xl flex items-center justify-center p-6 animate-in fade-in">
@@ -513,12 +540,9 @@ export default function App() {
           
           {activeTab === 'vip' && (
             <div className="py-8 space-y-8 max-w-[340px] mx-auto animate-in slide-in-from-bottom flex flex-col items-center">
-               {/* --- CARD DE PERFIL NEON --- */}
                <div className="w-full relative bg-gradient-to-br from-[#FF007A] via-purple-600 to-yellow-500 p-[2px] rounded-[3.5rem] shadow-[0_20px_50px_rgba(255,0,122,0.2)]">
                   <div className="bg-[#0f1525] rounded-[3.4rem] p-10 flex flex-col items-center space-y-6 overflow-hidden relative">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF007A]/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
-                    
-                    {/* Círculo da Foto */}
                     <div 
                       onClick={() => fileInputRef.current?.click()}
                       className="w-28 h-28 rounded-full border-4 border-[#FFD700] p-1 bg-black shadow-[0_0_30px_rgba(255,215,0,0.3)] relative group cursor-pointer overflow-hidden transition-all hover:scale-105 active:scale-95"
@@ -532,15 +556,12 @@ export default function App() {
                       )}
                       <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
                     </div>
-
                     <div className="text-center">
                        <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter leading-tight font-luxury">
                           {state.userName}<br/><span className="text-zinc-500 text-sm">&</span> {state.partnerName}
                        </h2>
                        <p className="mt-2 text-[8px] font-black text-yellow-500 uppercase tracking-[0.4em]">CASAL LUNA SUTRA</p>
                     </div>
-
-                    {/* Barra de XP */}
                     <div className="w-full space-y-2">
                        <div className="flex justify-between items-center text-[7px] font-black text-zinc-500 uppercase tracking-widest px-1">
                           <span>NÍVEL VIP 1</span>
@@ -552,14 +573,11 @@ export default function App() {
                     </div>
                   </div>
                </div>
-
-               {/* Container do Jogo */}
                <div className="w-full p-6 bg-[#0f1525] border-2 border-pink-500/20 rounded-[2.5rem] shadow-xl flex flex-col items-center space-y-4">
                   <div className="flex items-center space-x-2">
                     <span className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-pulse"></span>
                     <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">MINI-GAME DE ALTA DOPAMINA</span>
                   </div>
-                  
                   {isNeonPulseActive ? (
                     <NeonPulseGame 
                       userName={state.userName} 
@@ -579,7 +597,6 @@ export default function App() {
                           <span className="text-[9px] font-black text-pink-500 uppercase tracking-widest">Vidas hoje: {state.dailyLives}/5</span>
                         </div>
                       )}
-                      
                       {(!state.isVip && state.dailyLives <= 0) ? (
                         <div className="bg-[#0f1525] border-2 border-yellow-500/30 p-6 rounded-3xl text-center space-y-3 animate-in zoom-in">
                           <p className="text-white text-[10px] font-black uppercase italic leading-tight">Suas 5 vidas diárias acabaram. Jogue sem limites e libere o Perfil do Casal sendo VIP!</p>
@@ -596,8 +613,6 @@ export default function App() {
                       )}
                     </div>
                   )}
-
-                  {/* Recordes da Comunidade */}
                   <div className="w-full mt-4 space-y-3 bg-black/40 p-4 rounded-2xl border border-white/5 shadow-inner">
                     <p className="text-[7px] font-black text-pink-500 uppercase tracking-widest text-center">🏆 RECORDES DA COMUNIDADE</p>
                     {[
@@ -616,8 +631,6 @@ export default function App() {
                     ))}
                   </div>
                </div>
-
-               {/* Oferta R$ 12,90 */}
                {!state.isVip && (
                  <div className="w-full flex flex-col items-center space-y-4">
                    <div className="w-full bg-[#0f1525] p-8 rounded-[3rem] border-2 border-yellow-500/30 space-y-4 animate-in zoom-in shadow-2xl relative overflow-hidden group">
@@ -638,10 +651,15 @@ export default function App() {
                    </button>
                  </div>
                )}
+               {state.isVip && state.vipKey && (
+                 <div className="mt-4 p-4 border border-zinc-800 rounded-2xl text-center">
+                    <p className="text-[7px] text-zinc-500 font-black uppercase mb-1">SUA CHAVE VIP ATIVA:</p>
+                    <p className="text-yellow-500 font-mono font-black">{state.vipKey}</p>
+                 </div>
+               )}
             </div>
           )}
         </main>
-
         <nav className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-2xl border-t border-white/5 px-4 py-4 flex justify-around items-center z-50 rounded-t-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,1)] pb-[calc(1rem+env(safe-area-inset-bottom))]">
           {[
             { id: 'girar', label: 'LUNA', icon: '🎰' },
@@ -656,7 +674,6 @@ export default function App() {
             </button>
           ))}
         </nav>
-
         {activeMission && (
           <div className="fixed inset-0 z-[1300] bg-black/98 backdrop-blur-3xl flex items-center justify-center p-6 animate-in fade-in duration-500">
              <div className="bg-[#0f1525] border-2 border-yellow-500/20 w-full max-w-[300px] rounded-[3rem] text-center p-8 space-y-6 relative shadow-[0_0_100px_rgba(251,191,36,0.15)]">
